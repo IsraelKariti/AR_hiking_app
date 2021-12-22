@@ -37,6 +37,7 @@ public class MapScript : MonoBehaviour
     private List<float> _mapSamplesXList;
     private List<float> _mapSamplesZList;
     private GameObject poiGameObject_3;
+    private GameObject poiGameObject_zooStore;
     private GameObject poiGameObject_10;
 
     private void Awake()
@@ -44,12 +45,12 @@ public class MapScript : MonoBehaviour
         Debug.Log(TAG + " awake");
 
         _samples = new List<GameObject>();
-        _mapSamplesXList = new List<float>();
-        _mapSamplesZList = new List<float>();
 
         //create poi for Avraham Avinu 3
         poiGameObject_3 = Instantiate(poiPrefab, Vector3.zero, Quaternion.identity, transform);
         poiGameObject_10 = Instantiate(poiPrefab, Vector3.zero, Quaternion.identity, transform);
+        poiGameObject_zooStore = Instantiate(poiPrefab, Vector3.zero, Quaternion.identity, transform);
+   
     }
 
     // Start is called before the first frame update
@@ -66,15 +67,19 @@ public class MapScript : MonoBehaviour
         lengthMeters = GeoToMetersConverter.convertLonDiffToMeters(Mathf.Abs(downLeftCornerLon - upRightCornerLon), centerLat);
 
         // set the size and position of the borders
-        setBorders();
+        //setBorders();
 
 
         // initialize pois
-        poiGameObject_3.GetComponent<PoiScript>().setCoordinates(new List<Tuple<double, double>>() {    new Tuple<double, double>(31.2623015, 34.7933891),
+        poiGameObject_3.GetComponent<PoiScript>().setCoordinates(new List<Tuple<double, double>>() {    new Tuple<double, double>(31.2623015, 34.7933891), // avraham avinu 3
                                                                                                 new Tuple<double, double>(31.2623043, 34.7938659),
                                                                                                 new Tuple<double, double>(31.2622231, 34.7938669),
                                                                                                 new Tuple<double, double>(31.2622228, 34.7933916)});
-        poiGameObject_10.GetComponent<PoiScript>().setCoordinates(new List<Tuple<double, double>>() {    new Tuple<double, double>(31.2635667, 34.7939018),
+        poiGameObject_zooStore.GetComponent<PoiScript>().setCoordinates(new List<Tuple<double, double>>() {    new Tuple<double, double>(31.262304, 34.7938649), // zoo store
+                                                                                                new Tuple<double, double>(31.2622235, 34.7938673),
+                                                                                                new Tuple<double, double>(31.2622233, 34.7938027),
+                                                                                                new Tuple<double, double>(31.2623038, 34.7937982)});
+        poiGameObject_10.GetComponent<PoiScript>().setCoordinates(new List<Tuple<double, double>>() {    new Tuple<double, double>(31.2635667, 34.7939018), // avraham avinu 10
                                                                                                         new Tuple<double, double>(31.2630284, 34.7939135),
                                                                                                         new Tuple<double, double>(31.2630274, 34.793802),
                                                                                                         new Tuple<double, double>(31.2635661, 34.793791)});
@@ -127,7 +132,7 @@ public class MapScript : MonoBehaviour
 
     public void OnGpsUpdated(float lat, float lon)
     {
-        Debug.Log(TAG + "MapScript OnGpsUpdated start" );
+        Debug.Log(TAG + "eventz MapScript OnGpsUpdated start" );
 
         // calculate the location of the sample
         Vector3 samplePosition;
@@ -140,17 +145,9 @@ public class MapScript : MonoBehaviour
         GameObject sample = Instantiate(gpsSamplePrefab, Vector3.zero, Quaternion.identity, transform);
         sample.transform.localPosition = samplePosition;
         sample.transform.localScale = new Vector3(0.1f, 0.1f, 0.1f);
-        Debug.Log(TAG + "OnGpsUpdated map position: " + transform.position);
-        Debug.Log(TAG + "OnGpsUpdated samplePosition(x,z - centerlatlon): " + samplePosition);
-        Debug.Log(TAG + "OnGpsUpdated sample local Position: " + sample.transform.localPosition);
-        Debug.Log(TAG + "OnGpsUpdated sample global Position: " + sample.transform.position);
 
         _samples.Add(sample);
-
-        _mapSamplesXList.Add(sample.transform.position.x);
-        _mapSamplesZList.Add(sample.transform.position.z);
-        //sample.GetComponent<TextMeshPro>().text = "lat: " + lat + "\nlon: " + lon;
-        Debug.Log(TAG + "MapScript OnGpsUpdated end");
+        Debug.Log(TAG + "eventz MapScript OnGpsUpdated end");
 
     }
 

@@ -5,6 +5,7 @@ using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using System.IO;
 
 public class LeastSquareScript : MonoBehaviour
 {
@@ -12,37 +13,42 @@ public class LeastSquareScript : MonoBehaviour
     public MapScript mapScript;
     public GroundScript groundScript;
     public GpsScript gpsScript;
-    public TMP_Text text;
+    public GameObject AxGameObject;
+    //public GameObject LinePrefab;
+    public bool axOn { set { _axOn = value; } }
+    public Text text;
 
     private string TAG = "LeastSquareScript";
     private List<GameObject> mapSamples;
     private List<GameObject> groundSamples;
-    private bool init = true;
+
     //rotation variables
-    private Quaternion from;
-    private Quaternion to;
     private float prevLS;
     private int rotateDirection;// 0 : dont rotate      -1 : rotate CW       +1 : rotate CCW
     private float currLS;
     private int counter;
-    private bool isRotating = false;
-    private float accuTime = 0;
-    private Vector3 ax;
+    private Vector3 axVector3;
     private float prevAngle;
+    private bool _axOn;
+    private StreamWriter writer;
     private void Start()
     {
-
         mapSamples = mapScript.mapSamples;
-
         groundSamples = groundScript.groundSamples;
-
-        gpsScript.GpsUpdated += OnGpsUpdated;
-
+        gpsScript.GpsUpdatedPhase2 += OnGpsUpdated;
+        _axOn = true;
+    }
+    public void Update()
+    {
+        AxGameObject.SetActive(_axOn);
     }
 
-    public void OnGpsUpdated(float lat, float lon)
+    
+
+    public void OnGpsUpdated()
     {
         Debug.Log(TAG + "LeastSquareScript OnGpsUpdated start");
+        
 
         //STEP 1: rotate around y
         findBestRotation();
@@ -51,8 +57,75 @@ public class LeastSquareScript : MonoBehaviour
         findeBestPosition();
         Debug.Log(TAG + "LeastSquareScript OnGpsUpdated end a");
 
+
+
     }
 
+    public void findBestRotation()
+    {
+        writer = new StreamWriter(Application.persistentDataPath+ "/rotationLog.txt", false);
+
+        // find rotation axis: center of points
+        writer.Write("mapSamples: " + mapSamples.Count);
+        for (int i = 0; i < mapSamples.Count; i++)
+            writer.Write(" " + i + ": " + mapSamples[i].transform.position.ToString());
+        axVector3 = getAxPosition();
+        AxGameObject.transform.position = axVector3;
+        writer.WriteLine("ax: "+axVector3.ToString());
+
+        //STEP 1: calculate the LS in CCW 
+        map.transform.RotateAround(axVector3, Vector3.up, 1);
+        float ccwLS = sumSquares();
+
+        //STEP 1: calculate the LS in CW 
+        map.transform.RotateAround(axVector3, Vector3.up, -2);
+        float cwLS = sumSquares();
+
+        // rotate back to the middle
+        map.transform.RotateAround(axVector3, Vector3.up, 1);
+        float middleLS = sumSquares();
+        prevLS = middleLS;
+
+        //STEP 2: decide CW or CCW
+        if (middleLS < cwLS && middleLS < ccwLS)
+        {
+            // there is nothing to change
+            rotateDirection = 0;
+        }
+        else if (cwLS < middleLS)
+        {
+            rotateDirection = -1;
+
+        }
+        else
+        {
+            rotateDirection = 1;
+
+        }
+
+        // rotate the GO untill the least squares found
+        currLS = middleLS;
+        counter = 0;
+
+        do
+        {
+            prevLS = currLS;
+            map.transform.RotateAround(axVector3, Vector3.up, rotateDirection);
+            currLS = sumSquares();
+            counter += rotateDirection;
+            writer.WriteLine("currLS: "+currLS);
+
+        }
+        while (currLS < prevLS);
+
+
+        // rotate back 1 degree
+        map.transform.RotateAround(axVector3, Vector3.up, -1 * rotateDirection);
+        counter += (-1 * rotateDirection);
+        currLS = prevLS;
+        writer.Close();
+
+    }
     private void findeBestPosition()
     {
         float bestX = findBestPositionOnXAxis();
@@ -118,88 +191,57 @@ public class LeastSquareScript : MonoBehaviour
         return avg;
     }
 
-    public void findBestRotation()
-    {
-        // find rotation axis: center of points
-        float mapSamplesAvgX = map.GetComponent<MapScript>().getMapSamplesAvgX();
-        float mapSamplesAvgZ = map.GetComponent<MapScript>().getMapSamplesAvgZ();
-        ax = new Vector3(mapSamplesAvgX, 0, mapSamplesAvgZ);
-        Debug.Log("rotate : center of samples x " + mapSamplesAvgX + " z " + mapSamplesAvgZ);
-
-        //STEP 1: calculate the LS in CCW 
-        //map.transform.Rotate(new Vector3(0, 1, 0));
-        map.transform.RotateAround(ax, Vector3.up, 1);
-        float ccwLS = sumSquares();
-
-        //STEP 1: calculate the LS in CW 
-        //map.transform.Rotate(new Vector3(0, -2, 0));
-        map.transform.RotateAround(ax, Vector3.up, -2);
-        float cwLS = sumSquares();
-
-        // rotate back to the middle
-        //map.transform.Rotate(new Vector3(0, 1, 0));
-        map.transform.RotateAround(ax, Vector3.up, 1);
-        float middleLS = sumSquares();
-        prevLS = middleLS;
-
-        //STEP 2: decide CW or CCW
-        if (middleLS < cwLS && middleLS < ccwLS)
-        {
-            // there is nothing to change
-            rotateDirection = 0;
-        }
-        else if (cwLS < middleLS)
-        {
-            rotateDirection = -1;
-
-        }
-        else
-        {
-            rotateDirection = 1;
-
-        }
-
-        // rotate the GO untill the least squares found
-        currLS = middleLS;
-        counter = 0;
-        do
-        {
-            prevLS = currLS;
-            //map.transform.Rotate(new Vector3(0, rotateDirection, 0));
-            map.transform.RotateAround(ax, Vector3.up, rotateDirection);
-            currLS = sumSquares();
-            counter += rotateDirection;
-        }
-        while (currLS < prevLS);
-
-        // rotate back 1 degree
-        //transform.Rotate(new Vector3(0, 0, -1 * rotateDirection));
-        map.transform.RotateAround(ax, Vector3.up, -1*rotateDirection);
-        counter += (-1 * rotateDirection);
-        currLS = prevLS;
-
-    }
-    private void MapPositionApproximation()
-    {
-        Debug.Log(TAG + " OnGpsUpdated size "+ groundScript.groundSamplesXList.Count + " init " + init);
-
-            // get the first map samples on the x-z plane
-            float moveX = groundScript.groundSamplesXList[0] - mapScript.mapSamplesXList[0];
-            float moveZ = groundScript.groundSamplesZList[0] - mapScript.mapSamplesZList[0];
-            Debug.Log(TAG + "moveX: " + moveX + " moveZ: " + moveZ);
-            map.transform.position += new Vector3(moveX, 0, moveZ);
-           
-    }
-
     public float sumSquares()
     {
+        Debug.Log("incdec sumSquares start");
+
         float sum = 0;
-        for(int i = 0;i < groundSamples.Count;i++)
-        {
-            sum += Mathf.Pow( Vector3.Distance(groundSamples[i].transform.position, mapSamples[i].transform.position), 2);
-        }
         
+        int minSamples = groundSamples.Count < mapSamples.Count ? groundSamples.Count : mapSamples.Count;
+        Debug.Log("incdec sumSquares start1");
+
+        for (int i = 0;i < minSamples;i++)
+        {
+            Debug.Log("incdec sumSquares start i="+i);
+
+            sum += Mathf.Pow( Vector3.Distance(groundSamples[i].transform.position, mapSamples[i].transform.position), 2);
+            
+
+        }
+
+        Debug.Log("incdec sumSquares end");
+
         return sum;
     }
-   
+
+    public void incAngle()
+    {
+        Debug.Log("incdec inc start");
+        Vector3 axVector3 = getAxPosition();
+        AxGameObject.transform.position = axVector3;
+        map.transform.RotateAround(axVector3, Vector3.up, 1);
+        text.text = "LS: " + sumSquares();
+        Debug.Log("incdec inc end");
+
+    }
+
+    public void decAngle()
+    {
+
+        Vector3 axVector3 = getAxPosition();
+
+        AxGameObject.transform.position = axVector3;
+
+        map.transform.RotateAround(axVector3, Vector3.up, -1);
+
+        text.text = "LS: " + sumSquares();
+
+    }
+
+    private Vector3 getAxPosition()
+    {
+        float mapSamplesAvgX = map.GetComponent<MapScript>().getMapSamplesAvgX();
+        float mapSamplesAvgZ = map.GetComponent<MapScript>().getMapSamplesAvgZ();
+        return new Vector3(mapSamplesAvgX, 0, mapSamplesAvgZ);
+    }
 }
