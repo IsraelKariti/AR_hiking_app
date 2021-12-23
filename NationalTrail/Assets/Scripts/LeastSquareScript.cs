@@ -63,15 +63,19 @@ public class LeastSquareScript : MonoBehaviour
 
     public void findBestRotation()
     {
-        writer = new StreamWriter(Application.persistentDataPath+ "/rotationLog.txt", false);
+        writer = new StreamWriter(Application.persistentDataPath+ "/rotationLog.txt", true);
 
         // find rotation axis: center of points
         writer.Write("mapSamples: " + mapSamples.Count);
         for (int i = 0; i < mapSamples.Count; i++)
             writer.Write(" " + i + ": " + mapSamples[i].transform.position.ToString());
+        writer.WriteLine("");
+        writer.WriteLine("axGO before: " + AxGameObject.transform.position.ToString());
         axVector3 = getAxPosition();
+        writer.WriteLine("ax: " + axVector3.ToString());
+
         AxGameObject.transform.position = axVector3;
-        writer.WriteLine("ax: "+axVector3.ToString());
+        writer.WriteLine("axGO after: "+AxGameObject.transform.position.ToString());
 
         //STEP 1: calculate the LS in CCW 
         map.transform.RotateAround(axVector3, Vector3.up, 1);
@@ -117,7 +121,6 @@ public class LeastSquareScript : MonoBehaviour
 
         }
         while (currLS < prevLS);
-
 
         // rotate back 1 degree
         map.transform.RotateAround(axVector3, Vector3.up, -1 * rotateDirection);

@@ -25,7 +25,7 @@ public class GroundScript : MonoBehaviour
         Debug.Log(" eventz GroundScript OnGpsUpdated enter");
 
         GameObject samp = Instantiate(groundSamplePrefab, new Vector3(camTransform.position.x, 0, camTransform.position.z), Quaternion.identity);
-        samp.transform.localScale = new Vector3(0.1f, 0.1f, 0.1f);
+        //samp.transform.localScale = new Vector3(0.1f, 0.1f, 0.1f);
         _groundSamples.Add(samp);
         Debug.Log(" eventz GroundScript OnGpsUpdated end");
 

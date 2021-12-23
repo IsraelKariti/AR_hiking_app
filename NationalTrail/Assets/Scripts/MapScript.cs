@@ -115,36 +115,36 @@ public class MapScript : MonoBehaviour
         child.gameObject.transform.localPosition = new Vector3(-(float)xMeters, 0, -(float)zMeters);
     }
     
-    private void setBorders()
-    {
-        // resize the edges of the tile
-        transform.GetChild(0).localScale = new Vector3((float)widthMeters, 1, 1);// north
-        transform.GetChild(1).localScale = new Vector3((float)widthMeters, 1, 1);// south
-        transform.GetChild(2).localScale = new Vector3(1, 1, (float)lengthMeters);// east
-        transform.GetChild(3).localScale = new Vector3(1, 1, (float)lengthMeters);// west
+    //private void setBorders()
+    //{
+    //    // resize the edges of the tile
+    //    transform.GetChild(0).localScale = new Vector3((float)widthMeters, 1, 1);// north
+    //    transform.GetChild(1).localScale = new Vector3((float)widthMeters, 1, 1);// south
+    //    transform.GetChild(2).localScale = new Vector3(1, 1, (float)lengthMeters);// east
+    //    transform.GetChild(3).localScale = new Vector3(1, 1, (float)lengthMeters);// west
 
-        // position the edges of the tile
-        transform.GetChild(0).position = new Vector3(0, 0, (float)lengthMeters / 2);// north
-        transform.GetChild(1).position = new Vector3(0, 0, -(float)lengthMeters / 2);// south
-        transform.GetChild(2).position = new Vector3((float)widthMeters / 2, 0, 0);// east
-        transform.GetChild(3).position = new Vector3(-(float)widthMeters / 2, 0, 0);// west    }
-    }
+    //    // position the edges of the tile
+    //    transform.GetChild(0).position = new Vector3(0, 0, (float)lengthMeters / 2);// north
+    //    transform.GetChild(1).position = new Vector3(0, 0, -(float)lengthMeters / 2);// south
+    //    transform.GetChild(2).position = new Vector3((float)widthMeters / 2, 0, 0);// east
+    //    transform.GetChild(3).position = new Vector3(-(float)widthMeters / 2, 0, 0);// west    }
+    //}
 
     public void OnGpsUpdated(float lat, float lon)
     {
         Debug.Log(TAG + "eventz MapScript OnGpsUpdated start" );
 
-        // calculate the location of the sample
+        // calculate the x-z of the sample
         Vector3 samplePosition;
         double z = GeoToMetersConverter.convertLatDiffToMeters(_centerLat - lat);
         double x = GeoToMetersConverter.convertLonDiffToMeters(_centerLon - lon , _centerLat);
-
         samplePosition = new Vector3(-(float)x, 0, -(float)z);
-
+        // calculate the y of the sample
+        
         // create the sample 3D text
         GameObject sample = Instantiate(gpsSamplePrefab, Vector3.zero, Quaternion.identity, transform);
         sample.transform.localPosition = samplePosition;
-        sample.transform.localScale = new Vector3(0.1f, 0.1f, 0.1f);
+        //sample.transform.localScale = new Vector3(0.1f, 0.1f, 0.1f);
 
         _samples.Add(sample);
         Debug.Log(TAG + "eventz MapScript OnGpsUpdated end");

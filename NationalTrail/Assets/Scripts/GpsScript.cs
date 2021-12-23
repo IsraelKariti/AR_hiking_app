@@ -71,7 +71,6 @@ public class GpsScript : MonoBehaviour
 
         if (GpsUpdated != null)
         {
-            Debug.Log(TAG + " altitude : "+Input.location.lastData.altitude+ " horizontal accuracy: "+Input.location.lastData.horizontalAccuracy+ " vertical accuracy: "+ Input.location.lastData.verticalAccuracy);
             Debug.Log(TAG + " eventz before calls");
 
             GpsUpdated(Input.location.lastData.latitude, Input.location.lastData.longitude);
