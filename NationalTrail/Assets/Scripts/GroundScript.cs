@@ -17,15 +17,14 @@ public class GroundScript : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        gpsScript.GpsUpdated += OnGpsUpdated;
+        gpsScript.GpsUpdatedSetMap += OnGpsUpdated;
     }
 
-    public void OnGpsUpdated(float lat, float lon)
+    public void OnGpsUpdated(float lat, float lon, float acc)
     {
         Debug.Log(" eventz GroundScript OnGpsUpdated enter");
 
         GameObject samp = Instantiate(groundSamplePrefab, new Vector3(camTransform.position.x, 0, camTransform.position.z), Quaternion.identity);
-        //samp.transform.localScale = new Vector3(0.1f, 0.1f, 0.1f);
         _groundSamples.Add(samp);
         Debug.Log(" eventz GroundScript OnGpsUpdated end");
 

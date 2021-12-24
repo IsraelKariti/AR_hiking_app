@@ -30,12 +30,11 @@ public class LeastSquareScript : MonoBehaviour
     private Vector3 axVector3;
     private float prevAngle;
     private bool _axOn;
-    private StreamWriter writer;
     private void Start()
     {
         mapSamples = mapScript.mapSamples;
         groundSamples = groundScript.groundSamples;
-        gpsScript.GpsUpdatedPhase2 += OnGpsUpdated;
+        gpsScript.GpsUpdatedCalcLeastSquares += OnGpsUpdated;
         _axOn = true;
     }
     public void Update()
@@ -58,27 +57,21 @@ public class LeastSquareScript : MonoBehaviour
         Debug.Log(TAG + "LeastSquareScript OnGpsUpdated end a");
 
 
+        AxGameObject.transform.position = getAxPosition();
 
     }
 
     public void findBestRotation()
     {
-        writer = new StreamWriter(Application.persistentDataPath+ "/rotationLog.txt", true);
 
-        // find rotation axis: center of points
-        writer.Write("mapSamples: " + mapSamples.Count);
-        for (int i = 0; i < mapSamples.Count; i++)
-            writer.Write(" " + i + ": " + mapSamples[i].transform.position.ToString());
-        writer.WriteLine("");
-        writer.WriteLine("axGO before: " + AxGameObject.transform.position.ToString());
         axVector3 = getAxPosition();
-        writer.WriteLine("ax: " + axVector3.ToString());
 
-        AxGameObject.transform.position = axVector3;
-        writer.WriteLine("axGO after: "+AxGameObject.transform.position.ToString());
+
+        //AxGameObject.transform.position = axVector3;// this line is useless as the whole map is about to change rotation and than position leaging the ax irrelevent(the ax is only relevent before the map mpves)
 
         //STEP 1: calculate the LS in CCW 
         map.transform.RotateAround(axVector3, Vector3.up, 1);
+
         float ccwLS = sumSquares();
 
         //STEP 1: calculate the LS in CW 
@@ -117,7 +110,6 @@ public class LeastSquareScript : MonoBehaviour
             map.transform.RotateAround(axVector3, Vector3.up, rotateDirection);
             currLS = sumSquares();
             counter += rotateDirection;
-            writer.WriteLine("currLS: "+currLS);
 
         }
         while (currLS < prevLS);
@@ -126,7 +118,6 @@ public class LeastSquareScript : MonoBehaviour
         map.transform.RotateAround(axVector3, Vector3.up, -1 * rotateDirection);
         counter += (-1 * rotateDirection);
         currLS = prevLS;
-        writer.Close();
 
     }
     private void findeBestPosition()
@@ -134,8 +125,6 @@ public class LeastSquareScript : MonoBehaviour
         float bestX = findBestPositionOnXAxis();
         float bestZ = findBestPositionOnZAxis();
         Vector3 mapMovement = new Vector3(bestX, 0, bestZ);
-        Debug.Log(TAG + "LeastSquareScript OnGpsUpdated findeBestPosition map.transform.position " + map.transform.position);
-        Debug.Log(TAG + "LeastSquareScript OnGpsUpdated findeBestPosition mapMovement " + mapMovement);
 
         map.transform.position += mapMovement;
 
@@ -148,8 +137,6 @@ public class LeastSquareScript : MonoBehaviour
         float totalX = 0;
         float avg = 0;
         int limit = 0;
-        Debug.Log(TAG + "LeastSquareScript OnGpsUpdated mapSamplesXList.Count "+ mapSamples.Count);
-        Debug.Log(TAG + "LeastSquareScript OnGpsUpdated groundSamplesXList.Count "+ groundSamples.Count);
 
         if (mapSamples.Count > 0 && groundSamples.Count >0)
         {
@@ -157,12 +144,9 @@ public class LeastSquareScript : MonoBehaviour
             for (int i = 0; i < limit; i++)
             {
                 totalX += (groundSamples[i].transform.position.x - mapSamples[i].transform.position.x);
-                Debug.Log(TAG + "LeastSquareScript OnGpsUpdated findBestPositionOnXAxis totalX "+totalX+ " +groundSamplesXList[i] + " +groundSamples[i].transform.position.x + " mapSamplesXList[i] " + mapSamples[i].transform.position.x  );
 
             }
             avg = totalX / limit;
-            Debug.Log(TAG + "LeastSquareScript OnGpsUpdated findBestPositionOnXAxis avg " + avg + "  limit: "+limit);
-            Debug.Log(TAG + "final");
 
         }
         return avg;
@@ -174,8 +158,6 @@ public class LeastSquareScript : MonoBehaviour
         float totalZ = 0;
         float avg = 0;
         int limit = 0;
-        Debug.Log(TAG + "LeastSquareScript OnGpsUpdated mapSamplesZList.Count " + mapSamples.Count);
-        Debug.Log(TAG + "LeastSquareScript OnGpsUpdated groundSamplesZList.Count " + groundSamples.Count);
 
         if (mapSamples.Count > 0 && groundSamples.Count > 0)
         {
@@ -183,12 +165,9 @@ public class LeastSquareScript : MonoBehaviour
             for (int i = 0; i < limit; i++)
             {
                 totalZ += (groundSamples[i].transform.position.z - mapSamples[i].transform.position.z);
-                Debug.Log(TAG + "LeastSquareScript OnGpsUpdated findBestPositionOnXAxis totalX " + totalZ + " +groundSamplesZList[i] + " + groundSamples[i].transform.position.z + " mapSamplesZList[i] " + mapSamples[i].transform.position.z);
 
             }
             avg = totalZ / limit;
-            Debug.Log(TAG + "LeastSquareScript OnGpsUpdated findBestPositionOnZAxis avg " + avg + "  limit: " + limit);
-            Debug.Log(TAG + "final");
 
         }
         return avg;
@@ -196,35 +175,29 @@ public class LeastSquareScript : MonoBehaviour
 
     public float sumSquares()
     {
-        Debug.Log("incdec sumSquares start");
 
         float sum = 0;
         
         int minSamples = groundSamples.Count < mapSamples.Count ? groundSamples.Count : mapSamples.Count;
-        Debug.Log("incdec sumSquares start1");
 
         for (int i = 0;i < minSamples;i++)
         {
-            Debug.Log("incdec sumSquares start i="+i);
 
             sum += Mathf.Pow( Vector3.Distance(groundSamples[i].transform.position, mapSamples[i].transform.position), 2);
             
 
         }
 
-        Debug.Log("incdec sumSquares end");
 
         return sum;
     }
 
     public void incAngle()
     {
-        Debug.Log("incdec inc start");
         Vector3 axVector3 = getAxPosition();
         AxGameObject.transform.position = axVector3;
         map.transform.RotateAround(axVector3, Vector3.up, 1);
         text.text = "LS: " + sumSquares();
-        Debug.Log("incdec inc end");
 
     }
 

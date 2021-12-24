@@ -2,7 +2,9 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 using TMPro;
+using System.IO;
 // this class represents a constant rectangular area (Tile) 
 // pois in the area will be the children of this game object
 public class MapScript : MonoBehaviour
@@ -14,9 +16,7 @@ public class MapScript : MonoBehaviour
     public GameObject poiPrefab;
 
     public List<GameObject> mapSamples { get { return _samples; } }
-    public List<float> mapSamplesXList { get { return _mapSamplesXList; } }
-    public List<float> mapSamplesZList { get { return _mapSamplesZList; } }
-
+   
 
 
     private string TAG = "Generate MapScript";
@@ -34,30 +34,26 @@ public class MapScript : MonoBehaviour
     private double widthMeters;//the east<-->west in meters 
     private double lengthMeters;// the north<-->south in meters
 
-    private List<float> _mapSamplesXList;
-    private List<float> _mapSamplesZList;
     private GameObject poiGameObject_3;
     private GameObject poiGameObject_zooStore;
     private GameObject poiGameObject_10;
-
+    private GameObject poiGameObject_10SideWalk;
     private void Awake()
     {
-        Debug.Log(TAG + " awake");
 
         _samples = new List<GameObject>();
 
         //create poi for Avraham Avinu 3
         poiGameObject_3 = Instantiate(poiPrefab, Vector3.zero, Quaternion.identity, transform);
         poiGameObject_10 = Instantiate(poiPrefab, Vector3.zero, Quaternion.identity, transform);
+        poiGameObject_10SideWalk = Instantiate(poiPrefab, Vector3.zero, Quaternion.identity, transform);
         poiGameObject_zooStore = Instantiate(poiPrefab, Vector3.zero, Quaternion.identity, transform);
-   
+
     }
 
     // Start is called before the first frame update
     void Start()
     {
-        
-
         // calculate the center of the tile
         _centerLat = (downLeftCornerLat + upRightCornerLat)/ 2;
         _centerLon = (downLeftCornerLon + upRightCornerLon)/ 2;
@@ -79,15 +75,21 @@ public class MapScript : MonoBehaviour
                                                                                                 new Tuple<double, double>(31.2622235, 34.7938673),
                                                                                                 new Tuple<double, double>(31.2622233, 34.7938027),
                                                                                                 new Tuple<double, double>(31.2623038, 34.7937982)});
-        poiGameObject_10.GetComponent<PoiScript>().setCoordinates(new List<Tuple<double, double>>() {    new Tuple<double, double>(31.2635667, 34.7939018), // avraham avinu 10
-                                                                                                        new Tuple<double, double>(31.2630284, 34.7939135),
-                                                                                                        new Tuple<double, double>(31.2630274, 34.793802),
-                                                                                                        new Tuple<double, double>(31.2635661, 34.793791)});
+        // avraham avinu 10
+        poiGameObject_10.GetComponent<PoiScript>().setCoordinates(new List<Tuple<double, double>>() {    new Tuple<double, double>(31.2635667, 34.7939018), // NE
+                                                                                                        new Tuple<double, double>(31.2630284, 34.7939135),//SE
+                                                                                                        new Tuple<double, double>(31.2630274, 34.793802),//SW
+                                                                                                        new Tuple<double, double>(31.2635661, 34.793791)});//NW
+        poiGameObject_10SideWalk.GetComponent<PoiScript>().setCoordinates(new List<Tuple<double, double>>() {       new Tuple<double, double>(31.263405, 34.7937523), // NE
+                                                                                                                    new Tuple<double, double>(31.2630667, 34.7937593),//SE
+                                                                                                                    new Tuple<double, double>(31.263066, 34.7937302),//SW
+                                                                                                                    new Tuple<double, double>(31.2634055, 34.7937232)});//NW
 
         // add pois to map
         addPois();
 
-        gpsScript.GpsUpdated += OnGpsUpdated;
+        gpsScript.GpsUpdatedSetMap += OnGpsUpdated;
+
     }
 
     // add all the pois in the map
@@ -96,7 +98,6 @@ public class MapScript : MonoBehaviour
         PoiScript[] allPois = GetComponentsInChildren<PoiScript>();
         foreach (PoiScript child in allPois)
         {
-            Debug.Log(TAG + " poi***************************");
             positionPoiInMap(child);
         }
     }
@@ -106,6 +107,7 @@ public class MapScript : MonoBehaviour
         // get the center of the poi
         double childLat = child.centerLat;
         double childLon = child.centerLon;
+        
         // calcula the position of the center of the poi
         double zMeters = GeoToMetersConverter.convertLatDiffToMeters(_centerLat - childLat);
         double xMeters = GeoToMetersConverter.convertLonDiffToMeters(_centerLon - childLon, _centerLat);
@@ -130,24 +132,26 @@ public class MapScript : MonoBehaviour
     //    transform.GetChild(3).position = new Vector3(-(float)widthMeters / 2, 0, 0);// west    }
     //}
 
-    public void OnGpsUpdated(float lat, float lon)
+    public void OnGpsUpdated(float lat, float lon, float acc)
     {
-        Debug.Log(TAG + "eventz MapScript OnGpsUpdated start" );
 
         // calculate the x-z of the sample
         Vector3 samplePosition;
+
+
         double z = GeoToMetersConverter.convertLatDiffToMeters(_centerLat - lat);
         double x = GeoToMetersConverter.convertLonDiffToMeters(_centerLon - lon , _centerLat);
+
         samplePosition = new Vector3(-(float)x, 0, -(float)z);
         // calculate the y of the sample
         
         // create the sample 3D text
         GameObject sample = Instantiate(gpsSamplePrefab, Vector3.zero, Quaternion.identity, transform);
         sample.transform.localPosition = samplePosition;
-        //sample.transform.localScale = new Vector3(0.1f, 0.1f, 0.1f);
-
+        sample.GetComponentsInChildren<TextMeshPro>()[0].text = acc.ToString("0.0");
+        sample.GetComponentsInChildren<TextMeshPro>()[1].text = acc.ToString("0.0");
         _samples.Add(sample);
-        Debug.Log(TAG + "eventz MapScript OnGpsUpdated end");
+
 
     }
 
@@ -155,10 +159,12 @@ public class MapScript : MonoBehaviour
     {
         float sumX = 0;
         float avgX = 0;
-        foreach(GameObject go in mapSamples)
+        
+        foreach (GameObject go in mapSamples)
         {
             sumX += go.transform.position.x;
         }
+
         avgX = sumX / mapSamples.Count;
         return avgX;
     }    
@@ -173,5 +179,9 @@ public class MapScript : MonoBehaviour
         }
         avgZ = sumZ / mapSamples.Count;
         return avgZ;
+    }
+    public void setMapHeight(float h)
+    {
+        transform.position = new Vector3(transform.position.x, h, transform.position.z);
     }
 }
