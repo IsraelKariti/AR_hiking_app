@@ -9,8 +9,8 @@ using System.IO;
 // pois in the area will be the children of this game object
 public class MapScript : MonoBehaviour
 {
-    public float centerLat { get { return _centerLat; } set { _centerLat = value; } }
-    public float centerLon { get { return _centerLon; } set { _centerLon = value; } }
+    public double centerLat { get { return _centerLat; } set { _centerLat = value; } }
+    public double centerLon { get { return _centerLon; } set { _centerLon = value; } }
     public GpsScript gpsScript;
     public GameObject gpsSamplePrefab;
     public GameObject poiPrefab;
@@ -24,13 +24,13 @@ public class MapScript : MonoBehaviour
     private List<GameObject> _samples;
     // all the way to Oren center
 
-    private readonly float upRightCornerLat = 31.26269f;
-    private readonly float upRightCornerLon = 34.79464f;
-    private readonly float downLeftCornerLat = 31.26181f;
-    private readonly float downLeftCornerLon = 34.79246f;
+    private readonly double upRightCornerLat = 31.26269f;
+    private readonly double upRightCornerLon = 34.79464f;
+    private readonly double downLeftCornerLat = 31.26181f;
+    private readonly double downLeftCornerLon = 34.79246f;
 
-    private float _centerLat;
-    private float _centerLon;
+    private double _centerLat;
+    private double _centerLon;
     private double widthMeters;//the east<-->west in meters 
     private double lengthMeters;// the north<-->south in meters
 
@@ -59,8 +59,8 @@ public class MapScript : MonoBehaviour
         _centerLon = (downLeftCornerLon + upRightCornerLon)/ 2;
 
         // calculate the physical dimensions of the tile
-        widthMeters = GeoToMetersConverter.convertLatDiffToMeters(Mathf.Abs(downLeftCornerLat - upRightCornerLat));
-        lengthMeters = GeoToMetersConverter.convertLonDiffToMeters(Mathf.Abs(downLeftCornerLon - upRightCornerLon), centerLat);
+        widthMeters = GeoToMetersConverter.convertLatDiffToMeters(Math.Abs(downLeftCornerLat - upRightCornerLat));
+        lengthMeters = GeoToMetersConverter.convertLonDiffToMeters(Math.Abs(downLeftCornerLon - upRightCornerLon), centerLat);
 
         // set the size and position of the borders
         //setBorders();
@@ -132,7 +132,7 @@ public class MapScript : MonoBehaviour
     //    transform.GetChild(3).position = new Vector3(-(float)widthMeters / 2, 0, 0);// west    }
     //}
 
-    public void OnGpsUpdated(float lat, float lon, float acc)
+    public void OnGpsUpdated(double lat, double lon, float acc)
     {
 
         // calculate the x-z of the sample

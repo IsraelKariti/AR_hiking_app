@@ -20,13 +20,9 @@ public class GroundScript : MonoBehaviour
         gpsScript.GpsUpdatedSetMap += OnGpsUpdated;
     }
 
-    public void OnGpsUpdated(float lat, float lon, float acc)
+    public void OnGpsUpdated(double lat, double lon, float acc)
     {
-        Debug.Log(" eventz GroundScript OnGpsUpdated enter");
-
         GameObject samp = Instantiate(groundSamplePrefab, new Vector3(camTransform.position.x, 0, camTransform.position.z), Quaternion.identity);
         _groundSamples.Add(samp);
-        Debug.Log(" eventz GroundScript OnGpsUpdated end");
-
     }
 }
