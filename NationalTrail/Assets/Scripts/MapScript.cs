@@ -32,8 +32,8 @@ public class MapScript : MonoBehaviour
 
     private double _centerLat;
     private double _centerLon;
-    private double widthMeters;//the east<-->west in meters 
-    private double lengthMeters;// the north<-->south in meters
+    //private double widthMeters;//the east<-->west in meters 
+    //private double lengthMeters;// the north<-->south in meters
 
     private GameObject poiGameObject_3;
     private GameObject poiGameObject_9SideWalk;
@@ -58,12 +58,12 @@ public class MapScript : MonoBehaviour
     void Start()
     {
         // calculate the center of the tile
-        _centerLat = (downLeftCornerLat + upRightCornerLat)/ 2;
-        _centerLon = (downLeftCornerLon + upRightCornerLon)/ 2;
+        _centerLat = 31.2626509;// (downLeftCornerLat + upRightCornerLat)/ 2;
+        _centerLon = 34.7941817;// (downLeftCornerLon + upRightCornerLon)/ 2;
 
         // calculate the physical dimensions of the tile
-        widthMeters = GeoToMetersConverter.convertLatDiffToMeters(Math.Abs(downLeftCornerLat - upRightCornerLat));
-        lengthMeters = GeoToMetersConverter.convertLonDiffToMeters(Math.Abs(downLeftCornerLon - upRightCornerLon), centerLat);
+        //widthMeters = GeoToMetersConverter.convertLatDiffToMeters(Math.Abs(downLeftCornerLat - upRightCornerLat));
+        //lengthMeters = GeoToMetersConverter.convertLonDiffToMeters(Math.Abs(downLeftCornerLon - upRightCornerLon), centerLat);
 
         // set the size and position of the borders
         //setBorders();

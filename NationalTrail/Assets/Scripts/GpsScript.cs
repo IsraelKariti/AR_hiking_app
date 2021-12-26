@@ -137,7 +137,7 @@ public class GpsScript : MonoBehaviour
         GpsUpdatedSetMap(inLat, inLon, inHorizontalAcc);
         GpsUpdatedCalcLeastSquares();
         float eleveationFromFloor = getElevationFromFloor(); 
-        File.AppendAllText(Application.persistentDataPath + "/coords.txt", pre+"lat: " + inLat + " lon: " + inLon + " acc: "+inHorizontalAcc+" alt: "+inAlt+" altAcc: "+inAltAcc+" elev: "+eleveationFromFloor.ToString("0.0")+"\n");
+        File.AppendAllText(Application.persistentDataPath + "/coords.txt", pre+":lat:" + inLat + ":lon:" + inLon + ":acc:"+inHorizontalAcc+":alt:"+inAlt+":altAcc:"+inAltAcc+":elev:"+eleveationFromFloor.ToString("0.0")+"\n");
     }
     private float getElevationFromFloor()
     {
