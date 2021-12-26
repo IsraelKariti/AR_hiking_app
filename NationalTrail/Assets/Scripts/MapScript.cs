@@ -14,7 +14,8 @@ public class MapScript : MonoBehaviour
     public GpsScript gpsScript;
     public GameObject gpsSamplePrefab;
     public GameObject poiPrefab;
-
+    public Camera arCam;
+    public Text textElev;
     public List<GameObject> mapSamples { get { return _samples; } }
    
 
@@ -35,6 +36,7 @@ public class MapScript : MonoBehaviour
     private double lengthMeters;// the north<-->south in meters
 
     private GameObject poiGameObject_3;
+    private GameObject poiGameObject_9SideWalk;
     private GameObject poiGameObject_zooStore;
     private GameObject poiGameObject_10;
     private GameObject poiGameObject_10SideWalk;
@@ -45,6 +47,7 @@ public class MapScript : MonoBehaviour
 
         //create poi for Avraham Avinu 3
         poiGameObject_3 = Instantiate(poiPrefab, Vector3.zero, Quaternion.identity, transform);
+        poiGameObject_9SideWalk = Instantiate(poiPrefab, Vector3.zero, Quaternion.identity, transform);
         poiGameObject_10 = Instantiate(poiPrefab, Vector3.zero, Quaternion.identity, transform);
         poiGameObject_10SideWalk = Instantiate(poiPrefab, Vector3.zero, Quaternion.identity, transform);
         poiGameObject_zooStore = Instantiate(poiPrefab, Vector3.zero, Quaternion.identity, transform);
@@ -71,6 +74,10 @@ public class MapScript : MonoBehaviour
                                                                                                 new Tuple<double, double>(31.2623043, 34.7938659),
                                                                                                 new Tuple<double, double>(31.2622231, 34.7938669),
                                                                                                 new Tuple<double, double>(31.2622228, 34.7933916)});
+        poiGameObject_9SideWalk.GetComponent<PoiScript>().setCoordinates(new List<Tuple<double, double>>() {    new Tuple<double, double>(31.2633228, 34.793603), //NE avraham avinu 9 SIDE WALK
+                                                                                                                new Tuple<double, double>(31.2628689, 34.7936119),//SE
+                                                                                                                new Tuple<double, double>(31.2628694, 34.7935835),//SW
+                                                                                                                new Tuple<double, double>(31.2633227, 34.7935766)});//NW
         poiGameObject_zooStore.GetComponent<PoiScript>().setCoordinates(new List<Tuple<double, double>>() {    new Tuple<double, double>(31.262304, 34.7938649), // zoo store
                                                                                                 new Tuple<double, double>(31.2622235, 34.7938673),
                                                                                                 new Tuple<double, double>(31.2622233, 34.7938027),
@@ -91,7 +98,12 @@ public class MapScript : MonoBehaviour
         gpsScript.GpsUpdatedSetMap += OnGpsUpdated;
 
     }
+    private void Update()
+    {
+        double y = getElevationFromFloor();
+        textElev.text = y.ToString("0.0");
 
+    }
     // add all the pois in the map
     private void addPois()
     {
@@ -141,7 +153,7 @@ public class MapScript : MonoBehaviour
 
         double z = GeoToMetersConverter.convertLatDiffToMeters(_centerLat - lat);
         double x = GeoToMetersConverter.convertLonDiffToMeters(_centerLon - lon , _centerLat);
-
+        double y = getElevationFromFloor();
         samplePosition = new Vector3(-(float)x, 0, -(float)z);
         // calculate the y of the sample
         
@@ -153,6 +165,18 @@ public class MapScript : MonoBehaviour
         _samples.Add(sample);
 
 
+    }
+
+    private float getElevationFromFloor()
+    {
+        RaycastHit hit;
+
+        if (Physics.Raycast(arCam.transform.position, -Vector3.up, out hit))
+        {
+            return hit.distance;
+        }
+        else
+            return 1.1f;// the default height of smartphone above ground while held by user
     }
 
     public float getMapSamplesAvgX()

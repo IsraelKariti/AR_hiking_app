@@ -10,6 +10,7 @@ using UnityEngine.Android;
 public class GpsScript : MonoBehaviour
 {
     public Text text;
+    public Camera arCam;
     private string TAG = "GpsScript";
     private double prevTimeStamp;
     //private int limitSamples = 10;
@@ -30,14 +31,16 @@ public class GpsScript : MonoBehaviour
     private double emulatorLon = 34.79350f;
     private double inLat;// the input location lat 
     private double inLon;
-    private float inAcc;
+    private float inHorizontalAcc;
+    private double inAlt;
+    private float inAltAcc;
 
     //ANDROID GPS
     AndroidJavaObject gpsProvider;
     private long lastAndroidGPSTimeStamp = 0;
 
     bool isNativeAndroidGps;
-
+    string pre;
     private void Awake()
     {
         if (!Input.location.isEnabledByUser) //FIRST IM CHACKING FOR PERMISSION IF "true" IT MEANS USER GAVED PERMISSION FOR USING LOCATION INFORMATION
@@ -60,22 +63,11 @@ public class GpsScript : MonoBehaviour
         {
             //=======================GPS ANDROID==========================
             // create the current UNITY activity
-            Debug.Log("ifandroidgps 1");
             AndroidJavaClass jc = new AndroidJavaClass("com.unity3d.player.UnityPlayer");
-            Debug.Log("ifandroidgps 2");
             AndroidJavaObject unityActivity = jc.GetStatic<AndroidJavaObject>("currentActivity");
-            if(unityActivity == null)
-                Debug.Log("ifandroidgps 3 null");
-            else
-                Debug.Log("ifandroidgps 3 ok");
 
             //instantiate the android plugin
             gpsProvider = new AndroidJavaObject("com.example.gpsplugin.GPSProvider", unityActivity);
-            if (gpsProvider == null)
-                Debug.Log("ifandroidgps gpsProvider == null");
-            else
-                Debug.Log("ifandroidgps gpsProvider == OK");
-
         }
     }
 
@@ -84,9 +76,15 @@ public class GpsScript : MonoBehaviour
     {
         text.text = skipSamples.ToString();
         if (isNativeAndroidGps == false)
+        {
+            pre = "U: ";
             unityGPS();
+        }
         else
+        {
+            pre = "A: ";
             androidGPS();
+        }
     }
 
     private void androidGPS()
@@ -96,19 +94,21 @@ public class GpsScript : MonoBehaviour
 
         if (time > lastAndroidGPSTimeStamp&& _gpsOn)
         {
-            
             // calculate new lat-lon for the origin 
             inLat = gpsProvider.Get<double>("lat");
+
             inLon = gpsProvider.Get<double>("lon");
-            inAcc = gpsProvider.Get<float>("accuracy");
-            //AndroidGPSText.text = "counter: " + androidCounter;
+
+            inHorizontalAcc = gpsProvider.Get<float>("accuracy");
+            inAlt = gpsProvider.Get<double>("alt");
+            inAltAcc = gpsProvider.Get<float>("altAcc");
+
             lastAndroidGPSTimeStamp = time;
 
             if (skipSamples > 0)
                 skipSamples--;
             else
                 OnGpsUpdated();
-            //text.text = "lat: " + lat + "\nlon: " + lon + "\nacc: " + acc;
         }
     }
 
@@ -118,9 +118,12 @@ public class GpsScript : MonoBehaviour
         {
             inLat = Input.location.lastData.latitude;
             inLon = Input.location.lastData.longitude;
-            inAcc = Input.location.lastData.horizontalAccuracy;
+            inHorizontalAcc = Input.location.lastData.horizontalAccuracy;
+            inAlt = Input.location.lastData.altitude;
+            inAltAcc = Input.location.lastData.verticalAccuracy;
 
             prevTimeStamp = Input.location.lastData.timestamp;
+
             if (skipSamples > 0)
                 skipSamples--;
             else
@@ -131,17 +134,27 @@ public class GpsScript : MonoBehaviour
 
     public void OnGpsUpdated()
     {
-            GpsUpdatedSetMap(inLat, inLon, inAcc);
-            GpsUpdatedCalcLeastSquares();
-
-            File.AppendAllText(Application.persistentDataPath + "/coords.txt", "lat: " + inLat + " lon: " + inLon + " acc: "+inAcc+"\n");
+        GpsUpdatedSetMap(inLat, inLon, inHorizontalAcc);
+        GpsUpdatedCalcLeastSquares();
+        float eleveationFromFloor = getElevationFromFloor(); 
+        File.AppendAllText(Application.persistentDataPath + "/coords.txt", pre+"lat: " + inLat + " lon: " + inLon + " acc: "+inHorizontalAcc+" alt: "+inAlt+" altAcc: "+inAltAcc+" elev: "+eleveationFromFloor.ToString("0.0")+"\n");
     }
+    private float getElevationFromFloor()
+    {
+        RaycastHit hit;
 
+        if (Physics.Raycast(transform.position, -Vector3.up, out hit))
+        {
+            return hit.distance;
+        }
+        else
+            return 1.1f;// the default height of smartphone above ground while held by user
+    }
     public void EmulateGps()
     {
             GpsUpdatedSetMap(emulatorLat, emulatorLon, 0);
             GpsUpdatedCalcLeastSquares();
-            File.AppendAllText(Application.persistentDataPath + "/coords.txt", "lat: " + emulatorLat + " lon: " + emulatorLon + " acc: " + inAcc + "\n");
+            File.AppendAllText(Application.persistentDataPath + "/coords.txt", pre+ "lat: " + emulatorLat + " lon: " + emulatorLon + " acc: " + inHorizontalAcc + " alt: " + inAlt + " altAcc: " + inAltAcc + "\n");
 
         emulatorLon -= 0.00003f;
     }
