@@ -47,7 +47,11 @@ public class GpsScript : MonoBehaviour
         {
             Permission.RequestUserPermission(Permission.FineLocation);
         }
-        isNativeAndroidGps = true;
+        isNativeAndroidGps = false;
+        // unity gps is superrior to native android gps. when i walk in a straight line everything is fine,
+        // but when i aim the phone sideways to look at a building the android gps throws the results around.
+        // it doesn't deal well with moving the phone all over
+        // this effect is much less notable in unity gps
     }
     // Start is called before the first frame update
     void Start()

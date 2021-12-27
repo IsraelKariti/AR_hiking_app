@@ -11,6 +11,8 @@ public class PoiScript : MonoBehaviour
     public GameObject connectorPrefab;
     public double centerLat { get { return _centerLat; } }
     public double centerLon { get { return _centerLon; } }
+    public string poiName { get { return _poiName; } set { _poiName = value; } }
+    public float centerAlt { get { return _centerAlt; } set { _centerAlt = value; } }
 
     private string TAG = "Generate PoiScript";
     private List<Tuple<double, double>> coordList;
@@ -19,7 +21,8 @@ public class PoiScript : MonoBehaviour
 
     private double _centerLat;
     private double _centerLon;
-    
+    private string _poiName;
+    private float _centerAlt;
     
     // Start is called before the first frame update
     void Awake()

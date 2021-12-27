@@ -7,6 +7,7 @@ using TMPro;
 using System.IO;
 // this class represents a constant rectangular area (Tile) 
 // pois in the area will be the children of this game object
+// this map ALTITUDE at y = 0 is 290 meters
 public class MapScript : MonoBehaviour
 {
     public double centerLat { get { return _centerLat; } set { _centerLat = value; } }
@@ -18,40 +19,45 @@ public class MapScript : MonoBehaviour
     public Text textElev;
     public List<GameObject> mapSamples { get { return _samples; } }
    
-
-
     private string TAG = "Generate MapScript";
    
     private List<GameObject> _samples;
     // all the way to Oren center
 
-    private readonly double upRightCornerLat = 31.26269f;
-    private readonly double upRightCornerLon = 34.79464f;
-    private readonly double downLeftCornerLat = 31.26181f;
-    private readonly double downLeftCornerLon = 34.79246f;
-
     private double _centerLat;
     private double _centerLon;
+    private float defaultAlt = 290;
     //private double widthMeters;//the east<-->west in meters 
     //private double lengthMeters;// the north<-->south in meters
+    private List<string> fileLines;
+    private List<GameObject> pois;
 
-    private GameObject poiGameObject_3;
-    private GameObject poiGameObject_9SideWalk;
-    private GameObject poiGameObject_zooStore;
-    private GameObject poiGameObject_10;
-    private GameObject poiGameObject_10SideWalk;
     private void Awake()
     {
 
-        _samples = new List<GameObject>();
+        _samples = new List<GameObject>();// gps samples
+        pois = new List<GameObject>();// point of interest(buildings, etc)
+        fileLines = new List<string>();
 
-        //create poi for Avraham Avinu 3
-        poiGameObject_3 = Instantiate(poiPrefab, Vector3.zero, Quaternion.identity, transform);
-        poiGameObject_9SideWalk = Instantiate(poiPrefab, Vector3.zero, Quaternion.identity, transform);
-        poiGameObject_10 = Instantiate(poiPrefab, Vector3.zero, Quaternion.identity, transform);
-        poiGameObject_10SideWalk = Instantiate(poiPrefab, Vector3.zero, Quaternion.identity, transform);
-        poiGameObject_zooStore = Instantiate(poiPrefab, Vector3.zero, Quaternion.identity, transform);
+        //TODO:
+        //1) read all lines from poi file
+        StreamReader reader = new StreamReader(Application.persistentDataPath+"/pois.txt");
+        string line;
+        while((line = reader.ReadLine())!=null)
+        {
+            fileLines.Add(line);
+            GameObject go = Instantiate(poiPrefab, Vector3.zero, Quaternion.identity, transform);
+            pois.Add(go);
 
+            // get all elments in line
+            string[] elements = line.Split(' ');
+            // set the name of the poi
+            go.GetComponent<PoiScript>().poiName = elements[0];
+            // set the altitude of the poi
+            go.GetComponent<PoiScript>().centerAlt = float.Parse(elements[elements.Length - 1]);
+        }
+        reader.Close();
+        //2) for each line instantiate poi prefab into a list
     }
 
     // Start is called before the first frame update
@@ -61,39 +67,34 @@ public class MapScript : MonoBehaviour
         _centerLat = 31.2626509;// (downLeftCornerLat + upRightCornerLat)/ 2;
         _centerLon = 34.7941817;// (downLeftCornerLon + upRightCornerLon)/ 2;
 
-        // calculate the physical dimensions of the tile
-        //widthMeters = GeoToMetersConverter.convertLatDiffToMeters(Math.Abs(downLeftCornerLat - upRightCornerLat));
-        //lengthMeters = GeoToMetersConverter.convertLonDiffToMeters(Math.Abs(downLeftCornerLon - upRightCornerLon), centerLat);
+        //TODO:
+        //1) for each line in the file create list of 4 tuples and call each poi setCoordinates
+        for(int i = 0;i < pois.Count;i++)
+        {
+            // get all elments in line
+            string[] elements = fileLines[i].Split(' ');
 
-        // set the size and position of the borders
-        //setBorders();
-
-
-        // initialize pois
-        poiGameObject_3.GetComponent<PoiScript>().setCoordinates(new List<Tuple<double, double>>() {    new Tuple<double, double>(31.2623015, 34.7933891), // avraham avinu 3
-                                                                                                new Tuple<double, double>(31.2623043, 34.7938659),
-                                                                                                new Tuple<double, double>(31.2622231, 34.7938669),
-                                                                                                new Tuple<double, double>(31.2622228, 34.7933916)});
-        poiGameObject_9SideWalk.GetComponent<PoiScript>().setCoordinates(new List<Tuple<double, double>>() {    new Tuple<double, double>(31.2633228, 34.793603), //NE avraham avinu 9 SIDE WALK
-                                                                                                                new Tuple<double, double>(31.2628689, 34.7936119),//SE
-                                                                                                                new Tuple<double, double>(31.2628694, 34.7935835),//SW
-                                                                                                                new Tuple<double, double>(31.2633227, 34.7935766)});//NW
-        poiGameObject_zooStore.GetComponent<PoiScript>().setCoordinates(new List<Tuple<double, double>>() {    new Tuple<double, double>(31.262304, 34.7938649), // zoo store
-                                                                                                new Tuple<double, double>(31.2622235, 34.7938673),
-                                                                                                new Tuple<double, double>(31.2622233, 34.7938027),
-                                                                                                new Tuple<double, double>(31.2623038, 34.7937982)});
-        // avraham avinu 10
-        poiGameObject_10.GetComponent<PoiScript>().setCoordinates(new List<Tuple<double, double>>() {    new Tuple<double, double>(31.2635667, 34.7939018), // NE
-                                                                                                        new Tuple<double, double>(31.2630284, 34.7939135),//SE
-                                                                                                        new Tuple<double, double>(31.2630274, 34.793802),//SW
-                                                                                                        new Tuple<double, double>(31.2635661, 34.793791)});//NW
-        poiGameObject_10SideWalk.GetComponent<PoiScript>().setCoordinates(new List<Tuple<double, double>>() {       new Tuple<double, double>(31.263405, 34.7937523), // NE
-                                                                                                                    new Tuple<double, double>(31.2630667, 34.7937593),//SE
-                                                                                                                    new Tuple<double, double>(31.263066, 34.7937302),//SW
-                                                                                                                    new Tuple<double, double>(31.2634055, 34.7937232)});//NW
-
+            // create the coords
+            List<Tuple<double, double>> tuples = new List<Tuple<double, double>>();
+            for (int j = 1; j < elements.Length - 1; j++)
+            {
+                string[] latlon = elements[j].Split(',');
+                tuples.Add(new Tuple<double, double>(float.Parse(latlon[0]), float.Parse(latlon[1])));
+            }
+            pois[i].GetComponent<PoiScript>().setCoordinates(tuples);
+        }
+      
         // add pois to map
         addPois();
+
+        //TODO:
+        //1) set all height with loop from file
+        foreach(GameObject go in pois)
+        {
+            float y = go.GetComponent<PoiScript>().centerAlt - defaultAlt;
+            go.transform.position = new Vector3(go.transform.position.x, y, go.transform.position.z);
+        }
+        
 
         gpsScript.GpsUpdatedSetMap += OnGpsUpdated;
 
@@ -129,20 +130,6 @@ public class MapScript : MonoBehaviour
         child.gameObject.transform.localPosition = new Vector3(-(float)xMeters, 0, -(float)zMeters);
     }
     
-    //private void setBorders()
-    //{
-    //    // resize the edges of the tile
-    //    transform.GetChild(0).localScale = new Vector3((float)widthMeters, 1, 1);// north
-    //    transform.GetChild(1).localScale = new Vector3((float)widthMeters, 1, 1);// south
-    //    transform.GetChild(2).localScale = new Vector3(1, 1, (float)lengthMeters);// east
-    //    transform.GetChild(3).localScale = new Vector3(1, 1, (float)lengthMeters);// west
-
-    //    // position the edges of the tile
-    //    transform.GetChild(0).position = new Vector3(0, 0, (float)lengthMeters / 2);// north
-    //    transform.GetChild(1).position = new Vector3(0, 0, -(float)lengthMeters / 2);// south
-    //    transform.GetChild(2).position = new Vector3((float)widthMeters / 2, 0, 0);// east
-    //    transform.GetChild(3).position = new Vector3(-(float)widthMeters / 2, 0, 0);// west    }
-    //}
 
     public void OnGpsUpdated(double lat, double lon, float acc)
     {
