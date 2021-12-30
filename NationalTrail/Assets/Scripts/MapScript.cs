@@ -8,6 +8,7 @@ using System.IO;
 // this class represents a constant rectangular area (Tile) 
 // pois in the area will be the children of this game object
 // this map ALTITUDE at y = 0 is 290 meters
+// the variables that define this map is: lat+lon+alt
 public class MapScript : MonoBehaviour
 {
     public double centerLat { get { return _centerLat; } set { _centerLat = value; } }
@@ -17,6 +18,8 @@ public class MapScript : MonoBehaviour
     public GameObject poiPrefab;
     public Camera arCam;
     public Text textElev;
+    public Text dynamicHeightText;
+
     public List<GameObject> mapSamples { get { return _samples; } }
    
     private string TAG = "Generate MapScript";
@@ -26,7 +29,7 @@ public class MapScript : MonoBehaviour
 
     private double _centerLat;
     private double _centerLon;
-    private float defaultAlt = 290;
+    private float defaultAlt = 0f;
     //private double widthMeters;//the east<-->west in meters 
     //private double lengthMeters;// the north<-->south in meters
     private List<string> fileLines;
@@ -64,8 +67,8 @@ public class MapScript : MonoBehaviour
     void Start()
     {
         // calculate the center of the tile
-        _centerLat = 31.2626509;// (downLeftCornerLat + upRightCornerLat)/ 2;
-        _centerLon = 34.7941817;// (downLeftCornerLon + upRightCornerLon)/ 2;
+        _centerLat = 32.08250;// (downLeftCornerLat + upRightCornerLat)/ 2;
+        _centerLon = 34.77405;// (downLeftCornerLon + upRightCornerLon)/ 2;
 
         //TODO:
         //1) for each line in the file create list of 4 tuples and call each poi setCoordinates
@@ -99,12 +102,6 @@ public class MapScript : MonoBehaviour
         gpsScript.GpsUpdatedSetMap += OnGpsUpdated;
 
     }
-    private void Update()
-    {
-        double y = getElevationFromFloor();
-        textElev.text = y.ToString("0.0");
-
-    }
     // add all the pois in the map
     private void addPois()
     {
@@ -120,7 +117,7 @@ public class MapScript : MonoBehaviour
         // get the center of the poi
         double childLat = child.centerLat;
         double childLon = child.centerLon;
-        
+
         // calcula the position of the center of the poi
         double zMeters = GeoToMetersConverter.convertLatDiffToMeters(_centerLat - childLat);
         double xMeters = GeoToMetersConverter.convertLonDiffToMeters(_centerLon - childLon, _centerLat);
@@ -129,6 +126,53 @@ public class MapScript : MonoBehaviour
         // so we add the minus sign to z
         child.gameObject.transform.localPosition = new Vector3(-(float)xMeters, 0, -(float)zMeters);
     }
+
+    private void Update()
+    {
+        //double y = getElevationFromFloor();
+        //textElev.text = y.ToString("0.0");
+
+        // loop on all pois find 2 closest
+        GameObject minGo1 = pois[0];
+        float dist1 = 999999;
+        GameObject minGo2 = pois[1];
+        float dist2 = 999999;
+        foreach (GameObject go in pois)
+        {
+            float distSqrd = Mathf.Pow(arCam.transform.position.x - go.transform.position.x, 2) + Mathf.Pow(arCam.transform.position.z - go.transform.position.z, 2);
+            if (distSqrd < dist1)
+            {
+                dist1 = distSqrd;
+                minGo1 = go;
+            }
+            else if (distSqrd < dist2)
+            {
+                dist2 = distSqrd;
+                minGo2 = go;
+            }
+        }
+        //now i have the two closest game object i will find my height
+
+        float heightOfCurrGroundAboveSeaLevel = (minGo1.GetComponent<PoiScript>().centerAlt * dist2 + minGo2.GetComponent<PoiScript>().centerAlt * dist1) / (dist1 + dist2);
+        float heightOfCurrGroundRelativeToMapCenter = heightOfCurrGroundAboveSeaLevel - defaultAlt;
+        float howMuchToLiftTheMap = -heightOfCurrGroundRelativeToMapCenter;
+        //now take into account the fact the the user is also moving in the AR coordinate system on the y axis
+        //and that the user is holding the cam at aprx height of 1.1 meters
+        //this variable will theoratically stay almost constant as the ar cam y position goes up the how much to lift goes down
+        float howMuchToLiftTheMapIfPhoneIsHandHeld = arCam.transform.position.y+ howMuchToLiftTheMap - 1.1f;
+        transform.position = new Vector3(transform.position.x, howMuchToLiftTheMapIfPhoneIsHandHeld, transform.position.z);
+        Debug.Log("the 1st closest poi is " + minGo1.GetComponent<PoiScript>().poiName);
+        Debug.Log("the 2nd closest poi is " + minGo2.GetComponent<PoiScript>().poiName);
+        Debug.Log("heightOfCurrGroundAboveSeaLevel " + heightOfCurrGroundAboveSeaLevel);
+        Debug.Log("heightOfCurrGroundRelativeToMapCenter " + heightOfCurrGroundRelativeToMapCenter);
+        dynamicHeightText.text = "1: " + minGo1.GetComponent<PoiScript>().poiName +
+                                "\n2: " + minGo2.GetComponent<PoiScript>().poiName +
+                                "\nsea: " + heightOfCurrGroundAboveSeaLevel +
+                                "\ncntr: " + heightOfCurrGroundRelativeToMapCenter +
+                                "\ncamy: "+ arCam.transform.position.y +
+                                "\nmpH: " + howMuchToLiftTheMapIfPhoneIsHandHeld;
+    }
+    
     
 
     public void OnGpsUpdated(double lat, double lon, float acc)
