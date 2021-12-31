@@ -19,6 +19,7 @@ public class MapScript : MonoBehaviour
     public Camera arCam;
     public Text textElev;
     public Text dynamicHeightText;
+    public GameObject poiConnectorPrefab;
 
     public List<GameObject> mapSamples { get { return _samples; } }
    
@@ -29,17 +30,21 @@ public class MapScript : MonoBehaviour
 
     private double _centerLat;
     private double _centerLon;
-    private float defaultAlt = 0f;
+    private float defaultAlt = 290f;
     //private double widthMeters;//the east<-->west in meters 
     //private double lengthMeters;// the north<-->south in meters
     private List<string> fileLines;
     private List<GameObject> pois;
+    private List<GameObject> poiConnectors;
+
+    private bool initCenter;
 
     private void Awake()
     {
-
+        initCenter = false;
         _samples = new List<GameObject>();// gps samples
         pois = new List<GameObject>();// point of interest(buildings, etc)
+        poiConnectors = new List<GameObject>();// point of interest(buildings, etc)
         fileLines = new List<string>();
 
         //TODO:
@@ -58,17 +63,28 @@ public class MapScript : MonoBehaviour
             go.GetComponent<PoiScript>().poiName = elements[0];
             // set the altitude of the poi
             go.GetComponent<PoiScript>().centerAlt = float.Parse(elements[elements.Length - 1]);
+            // initialize the LAT+LON+ALT of the map to be from the first poi
+            if(initCenter == false)
+            {
+                _centerLat = float.Parse(elements[1].Split(',')[0]);
+                _centerLon = float.Parse(elements[1].Split(',')[1]);
+                defaultAlt = float.Parse(elements[elements.Length - 1]);
+                initCenter = true;
+            }
         }
         reader.Close();
         //2) for each line instantiate poi prefab into a list
     }
 
+    
+
     // Start is called before the first frame update
     void Start()
     {
+        
         // calculate the center of the tile
-        _centerLat = 32.08250;// (downLeftCornerLat + upRightCornerLat)/ 2;
-        _centerLon = 34.77405;// (downLeftCornerLon + upRightCornerLon)/ 2;
+        //_centerLat = 32.08250;// (downLeftCornerLat + upRightCornerLat)/ 2;
+        //_centerLon = 34.77405;// (downLeftCornerLon + upRightCornerLon)/ 2;
 
         //TODO:
         //1) for each line in the file create list of 4 tuples and call each poi setCoordinates
@@ -76,11 +92,14 @@ public class MapScript : MonoBehaviour
         {
             // get all elments in line
             string[] elements = fileLines[i].Split(' ');
+            Debug.Log("elementis 0: " + elements[0]) ;
 
             // create the coords
             List<Tuple<double, double>> tuples = new List<Tuple<double, double>>();
             for (int j = 1; j < elements.Length - 1; j++)
             {
+                Debug.Log("elementis "+j+": " + elements[j]);
+
                 string[] latlon = elements[j].Split(',');
                 tuples.Add(new Tuple<double, double>(float.Parse(latlon[0]), float.Parse(latlon[1])));
             }
@@ -97,7 +116,9 @@ public class MapScript : MonoBehaviour
             float y = go.GetComponent<PoiScript>().centerAlt - defaultAlt;
             go.transform.position = new Vector3(go.transform.position.x, y, go.transform.position.z);
         }
-        
+
+        // connect all pois to a route\path
+        connectPois();
 
         gpsScript.GpsUpdatedSetMap += OnGpsUpdated;
 
@@ -126,7 +147,55 @@ public class MapScript : MonoBehaviour
         // so we add the minus sign to z
         child.gameObject.transform.localPosition = new Vector3(-(float)xMeters, 0, -(float)zMeters);
     }
+    // this method is for create the route the hiker is following
+    private void connectPois()
+    {
+        // assuming the pois are in their order of walking 
+        for (int i = 0; i < pois.Count - 1; i++)
+        {
+            Debug.Log("pois pois[i].transform.localPosition.x " + pois[i].transform.localPosition.x);
+            Debug.Log("pois pois[i].transform.localPosition.y " + pois[i].transform.localPosition.y);
+            Debug.Log("pois pois[i].transform.localPosition.z " + pois[i].transform.localPosition.z);
+            Debug.Log("pois pois[i+1].transform.localPosition.x " + pois[i+1].transform.localPosition.x);
+            Debug.Log("pois pois[i+1].transform.localPosition.y " + pois[i+1].transform.localPosition.y);
+            Debug.Log("pois pois[i+1].transform.localPosition.z " + pois[i+1].transform.localPosition.z);
+            // get the location of the connector between pois
+            float x = (pois[i].transform.localPosition.x + pois[i + 1].transform.localPosition.x) / 2;
+            float y = (pois[i].transform.localPosition.y + pois[i + 1].transform.localPosition.y) / 2;
+            float z = (pois[i].transform.localPosition.z + pois[i + 1].transform.localPosition.z) / 2;
+            GameObject go = Instantiate(poiConnectorPrefab, Vector3.zero, Quaternion.identity, transform);
+            poiConnectors.Add(go);
+            // locate the connector between the two pois
+            go.transform.localPosition = new Vector3(x, y, z);
+            Debug.Log("pois go.transform.localPosition " + go.transform.localPosition.ToString());
 
+            go.transform.localScale = new Vector3(1, Vector3.Distance(pois[i].transform.localPosition, pois[i + 1].transform.localPosition)/2, 1);
+            Debug.Log("pois go.transform.localScale " + go.transform.localScale.ToString());
+
+            // calculate angle of rotation arount x
+            // 1) calc dist on x z plane
+            float distXZ = Vector3.Distance(new Vector3(pois[i].transform.localPosition.x, 0, pois[i].transform.localPosition.z), new Vector3(pois[i + 1].transform.localPosition.x, 0, pois[i + 1].transform.localPosition.z));
+            Debug.Log("pois distXZ " + distXZ);
+
+            // 2) calc dist on y plane
+            float heightY = pois[i + 1].transform.localPosition.y - pois[i].transform.localPosition.y;
+            Debug.Log("pois heightY " + heightY);
+
+            // 3) calc angle to rotate around x axis
+            float rotX = Mathf.Atan2(distXZ,heightY)*Mathf.Rad2Deg;
+            Debug.Log("pois rotX " + rotX);
+
+            float rotY = Mathf.Atan2(pois[i+1].transform.localPosition.x - pois[i].transform.localPosition.x, pois[i+1].transform.localPosition.z - pois[i].transform.localPosition.z)*Mathf.Rad2Deg;
+            Debug.Log("pois rotY " + rotY);
+
+            go.transform.localRotation = Quaternion.Euler(rotX, rotY, 0);
+
+        }
+    }
+    public void rotateConnector(float f)
+    {
+        poiConnectors[0].transform.localRotation = Quaternion.Euler(f, 0, 0);
+    }
     private void Update()
     {
         //double y = getElevationFromFloor();
@@ -161,6 +230,7 @@ public class MapScript : MonoBehaviour
         //this variable will theoratically stay almost constant as the ar cam y position goes up the how much to lift goes down
         float howMuchToLiftTheMapIfPhoneIsHandHeld = arCam.transform.position.y+ howMuchToLiftTheMap - 1.1f;
         transform.position = new Vector3(transform.position.x, howMuchToLiftTheMapIfPhoneIsHandHeld, transform.position.z);
+
         Debug.Log("the 1st closest poi is " + minGo1.GetComponent<PoiScript>().poiName);
         Debug.Log("the 2nd closest poi is " + minGo2.GetComponent<PoiScript>().poiName);
         Debug.Log("heightOfCurrGroundAboveSeaLevel " + heightOfCurrGroundAboveSeaLevel);
