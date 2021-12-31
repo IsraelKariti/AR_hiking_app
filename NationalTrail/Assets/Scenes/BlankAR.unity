@@ -733,7 +733,7 @@ MonoBehaviour:
   arCam: {fileID: 1354141926}
   textElev: {fileID: 478410561}
   dynamicHeightText: {fileID: 1201054667}
-  poiConnectorPrefab: {fileID: 6401785699173391314, guid: 76fe0a586e8f85a41b2eb93c99001235,
+  poiConnectorPrefab: {fileID: 4225874001046404577, guid: 891a5a1f7c21e0b4a9fb44419815e6f3,
     type: 3}
 --- !u!4 &223974228
 Transform:

@@ -169,7 +169,8 @@ public class MapScript : MonoBehaviour
             go.transform.localPosition = new Vector3(x, y, z);
             Debug.Log("pois go.transform.localPosition " + go.transform.localPosition.ToString());
 
-            go.transform.localScale = new Vector3(1, Vector3.Distance(pois[i].transform.localPosition, pois[i + 1].transform.localPosition)/2, 1);
+            //go.transform.localScale = new Vector3(1, Vector3.Distance(pois[i].transform.localPosition, pois[i + 1].transform.localPosition), 1);
+            go.GetComponent<SpriteRenderer>().size = new Vector2(1, Vector3.Distance(pois[i].transform.localPosition, pois[i + 1].transform.localPosition));
             Debug.Log("pois go.transform.localScale " + go.transform.localScale.ToString());
 
             // calculate angle of rotation arount x
