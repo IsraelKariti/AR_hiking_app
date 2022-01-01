@@ -13,10 +13,6 @@ public class LeastSquareScript : MonoBehaviour
     public MapScript mapScript;
     public GroundScript groundScript;
     public GpsScript gpsScript;
-    public GameObject AxGameObject;
-    //public GameObject LinePrefab;
-    public bool axOn { set { _axOn = value; } }
-    public Text text;
 
     private string TAG = "LeastSquareScript";
     private List<GameObject> mapSamples;
@@ -29,17 +25,12 @@ public class LeastSquareScript : MonoBehaviour
     private int counter;
     private Vector3 axVector3;
     private float prevAngle;
-    private bool _axOn;
+    //private bool _axOn;
     private void Start()
     {
         mapSamples = mapScript.mapSamples;
         groundSamples = groundScript.groundSamples;
         gpsScript.GpsUpdatedCalcLeastSquares += OnGpsUpdated;
-        _axOn = true;
-    }
-    public void Update()
-    {
-        AxGameObject.SetActive(_axOn);
     }
 
     
@@ -57,7 +48,6 @@ public class LeastSquareScript : MonoBehaviour
         Debug.Log(TAG + "LeastSquareScript OnGpsUpdated end a");
 
 
-        AxGameObject.transform.position = getAxPosition();
 
     }
 
@@ -192,27 +182,7 @@ public class LeastSquareScript : MonoBehaviour
         return sum;
     }
 
-    public void incAngle()
-    {
-        Vector3 axVector3 = getAxPosition();
-        AxGameObject.transform.position = axVector3;
-        map.transform.RotateAround(axVector3, Vector3.up, 1);
-        text.text = "LS: " + sumSquares();
 
-    }
-
-    public void decAngle()
-    {
-
-        Vector3 axVector3 = getAxPosition();
-
-        AxGameObject.transform.position = axVector3;
-
-        map.transform.RotateAround(axVector3, Vector3.up, -1);
-
-        text.text = "LS: " + sumSquares();
-
-    }
 
     private Vector3 getAxPosition()
     {
