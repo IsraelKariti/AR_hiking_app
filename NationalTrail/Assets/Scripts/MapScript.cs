@@ -17,10 +17,8 @@ public class MapScript : MonoBehaviour
     public GameObject gpsSamplePrefab;
     public GameObject poiPrefab;
     public Camera arCam;
-    public Text textElev;
-    public Text dynamicHeightText;
     public GameObject poiConnectorPrefab;
-
+    public Text t;
     public List<GameObject> mapSamples { get { return _samples; } }
    
     private string TAG = "Generate MapScript";
@@ -122,6 +120,9 @@ public class MapScript : MonoBehaviour
 
         gpsScript.GpsUpdatedSetMap += OnGpsUpdated;
 
+        //setConnectorsRotation();
+
+
     }
     // add all the pois in the map
     private void addPois()
@@ -163,15 +164,17 @@ public class MapScript : MonoBehaviour
             float x = (pois[i].transform.localPosition.x + pois[i + 1].transform.localPosition.x) / 2;
             float y = (pois[i].transform.localPosition.y + pois[i + 1].transform.localPosition.y) / 2;
             float z = (pois[i].transform.localPosition.z + pois[i + 1].transform.localPosition.z) / 2;
-            GameObject go = Instantiate(poiConnectorPrefab, Vector3.zero, Quaternion.identity, transform);
-            poiConnectors.Add(go);
+            GameObject goTop = Instantiate(poiConnectorPrefab, Vector3.zero, Quaternion.identity, transform);
+            //GameObject goBottom = Instantiate(poiConnectorPrefab, Vector3.zero, Quaternion.identity, goTop.transform);
+            poiConnectors.Add(goTop);
             // locate the connector between the two pois
-            go.transform.localPosition = new Vector3(x, y, z);
-            Debug.Log("pois go.transform.localPosition " + go.transform.localPosition.ToString());
+            goTop.transform.localPosition = new Vector3(x, y, z);
+            Debug.Log("pois go.transform.localPosition " + goTop.transform.localPosition.ToString());
 
             //go.transform.localScale = new Vector3(1, Vector3.Distance(pois[i].transform.localPosition, pois[i + 1].transform.localPosition), 1);
-            go.GetComponent<SpriteRenderer>().size = new Vector2(1, Vector3.Distance(pois[i].transform.localPosition, pois[i + 1].transform.localPosition));
-            Debug.Log("pois go.transform.localScale " + go.transform.localScale.ToString());
+            //goTop.GetComponent<SpriteRenderer>().size = new Vector2(1, Vector3.Distance(pois[i].transform.localPosition, pois[i + 1].transform.localPosition));
+            goTop.GetComponentInChildren<SpriteRenderer>().size = new Vector2(1, Vector3.Distance(pois[i].transform.localPosition, pois[i + 1].transform.localPosition));
+            Debug.Log("pois go.transform.localScale " + goTop.transform.localScale.ToString());
 
             // calculate angle of rotation arount x
             // 1) calc dist on x z plane
@@ -189,62 +192,51 @@ public class MapScript : MonoBehaviour
             float rotY = Mathf.Atan2(pois[i+1].transform.localPosition.x - pois[i].transform.localPosition.x, pois[i+1].transform.localPosition.z - pois[i].transform.localPosition.z)*Mathf.Rad2Deg;
             Debug.Log("pois rotY " + rotY);
 
-            go.transform.localRotation = Quaternion.Euler(rotX, rotY, 0);
-
+            goTop.transform.localRotation = Quaternion.Euler(rotX, rotY, 0);
+            //goBottom.transform.localRotation = Quaternion.Euler(0, 180f, 0);
         }
     }
     public void rotateConnector(float f)
     {
-        poiConnectors[0].transform.localRotation = Quaternion.Euler(f, 0, 0);
+        //poiConnectors[0].GetComponentsInChildren<Transform>()[1].localRotation = Quaternion.Euler(0, f, 0);
+        poiConnectors[0].transform.localRotation = Quaternion.Euler(0, f, 0);
     }
     private void Update()
     {
-        //double y = getElevationFromFloor();
-        //textElev.text = y.ToString("0.0");
-
-        // loop on all pois find 2 closest
-        GameObject minGo1 = pois[0];
-        float dist1 = 999999;
-        GameObject minGo2 = pois[1];
-        float dist2 = 999999;
-        foreach (GameObject go in pois)
-        {
-            float distSqrd = Mathf.Pow(arCam.transform.position.x - go.transform.position.x, 2) + Mathf.Pow(arCam.transform.position.z - go.transform.position.z, 2);
-            if (distSqrd < dist1)
-            {
-                dist1 = distSqrd;
-                minGo1 = go;
-            }
-            else if (distSqrd < dist2)
-            {
-                dist2 = distSqrd;
-                minGo2 = go;
-            }
-        }
-        //now i have the two closest game object i will find my height
-
-        float heightOfCurrGroundAboveSeaLevel = (minGo1.GetComponent<PoiScript>().centerAlt * dist2 + minGo2.GetComponent<PoiScript>().centerAlt * dist1) / (dist1 + dist2);
-        float heightOfCurrGroundRelativeToMapCenter = heightOfCurrGroundAboveSeaLevel - defaultAlt;
-        float howMuchToLiftTheMap = -heightOfCurrGroundRelativeToMapCenter;
-        //now take into account the fact the the user is also moving in the AR coordinate system on the y axis
-        //and that the user is holding the cam at aprx height of 1.1 meters
-        //this variable will theoratically stay almost constant as the ar cam y position goes up the how much to lift goes down
-        float howMuchToLiftTheMapIfPhoneIsHandHeld = arCam.transform.position.y+ howMuchToLiftTheMap - 1.1f;
-        transform.position = new Vector3(transform.position.x, howMuchToLiftTheMapIfPhoneIsHandHeld, transform.position.z);
-
-        Debug.Log("the 1st closest poi is " + minGo1.GetComponent<PoiScript>().poiName);
-        Debug.Log("the 2nd closest poi is " + minGo2.GetComponent<PoiScript>().poiName);
-        Debug.Log("heightOfCurrGroundAboveSeaLevel " + heightOfCurrGroundAboveSeaLevel);
-        Debug.Log("heightOfCurrGroundRelativeToMapCenter " + heightOfCurrGroundRelativeToMapCenter);
-        dynamicHeightText.text = "1: " + minGo1.GetComponent<PoiScript>().poiName +
-                                "\n2: " + minGo2.GetComponent<PoiScript>().poiName +
-                                "\nsea: " + heightOfCurrGroundAboveSeaLevel +
-                                "\ncntr: " + heightOfCurrGroundRelativeToMapCenter +
-                                "\ncamy: "+ arCam.transform.position.y +
-                                "\nmpH: " + howMuchToLiftTheMapIfPhoneIsHandHeld;
+        setMapHeight();
+        setConnectorsRotation();
     }
-    
-    
+
+    public void setConnectorsRotation()
+    {
+        // loop on all planes
+        foreach(GameObject go in poiConnectors)
+        {
+            // get the child
+            GameObject child = go.transform.GetChild(0).gameObject;
+            Debug.Log("srl child pos" + child.transform.position.ToString());
+            Debug.Log("srl child local rot" + child.transform.localRotation.eulerAngles.ToString());
+            t.text = ("srl child pos " + child.transform.position.ToString() + 
+                "\nsrl child local rot " + child.transform.localRotation.eulerAngles.ToString());
+
+            // get the world position of the camera
+            Vector3 camPos = arCam.transform.position;
+            Debug.Log("srl campos " + camPos.ToString());
+            t.text += ("\nsrl cam Pos " + camPos.ToString());
+
+            // get the position of the camera in the child frame of reference
+            Vector3 camInConnector = go.transform.InverseTransformPoint(camPos);
+            Debug.Log("srl camInChild pos" + camInConnector.ToString());
+            t.text += ("\nsrl cam Pos In Child " + camInConnector.ToString());
+
+            // calc the angle of rotation
+            float rotY = Mathf.Atan2(-camInConnector.x, -camInConnector.z)*Mathf.Rad2Deg;
+            Debug.Log("srl roty " + rotY);
+            t.text += ("\nsrl roty " + rotY);
+
+            child.transform.localRotation = Quaternion.Euler(0,rotY , 0);
+        }
+    }
 
     public void OnGpsUpdated(double lat, double lon, float acc)
     {
@@ -306,8 +298,37 @@ public class MapScript : MonoBehaviour
         avgZ = sumZ / mapSamples.Count;
         return avgZ;
     }
-    public void setMapHeight(float h)
+    public void setMapHeight()
     {
-        transform.position = new Vector3(transform.position.x, h, transform.position.z);
+        // loop on all pois find 2 closest
+        GameObject minGo1 = pois[0];
+        float dist1 = 999999;
+        GameObject minGo2 = pois[1];
+        float dist2 = 999999;
+        foreach (GameObject go in pois)
+        {
+            float distSqrd = Mathf.Pow(arCam.transform.position.x - go.transform.position.x, 2) + Mathf.Pow(arCam.transform.position.z - go.transform.position.z, 2);
+            if (distSqrd < dist1)
+            {
+                dist1 = distSqrd;
+                minGo1 = go;
+            }
+            else if (distSqrd < dist2)
+            {
+                dist2 = distSqrd;
+                minGo2 = go;
+            }
+        }
+        //now i have the two closest game object i will find my height
+
+        float heightOfCurrGroundAboveSeaLevel = (minGo1.GetComponent<PoiScript>().centerAlt * dist2 + minGo2.GetComponent<PoiScript>().centerAlt * dist1) / (dist1 + dist2);
+        float heightOfCurrGroundRelativeToMapCenter = heightOfCurrGroundAboveSeaLevel - defaultAlt;
+        float howMuchToLiftTheMap = -heightOfCurrGroundRelativeToMapCenter;
+        //now take into account the fact the the user is also moving in the AR coordinate system on the y axis
+        //and that the user is holding the cam at aprx height of 1.1 meters
+        //this variable will theoratically stay almost constant as the ar cam y position goes up the how much to lift goes down
+        float howMuchToLiftTheMapIfPhoneIsHandHeld = arCam.transform.position.y + howMuchToLiftTheMap - 1.1f;
+        transform.position = new Vector3(transform.position.x, howMuchToLiftTheMapIfPhoneIsHandHeld, transform.position.z);
+
     }
 }
