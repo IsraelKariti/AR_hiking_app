@@ -169,8 +169,8 @@ public class MapScript : MonoBehaviour
             go.transform.localPosition = new Vector3(x, y, z);
             Debug.Log("pois go.transform.localPosition " + go.transform.localPosition.ToString());
 
-            go.transform.localScale = new Vector3(0.01f, Vector3.Distance(pois[i].transform.localPosition, pois[i + 1].transform.localPosition), 1);
-            //go.GetComponent<SpriteRenderer>().size = new Vector2(1, Vector3.Distance(pois[i].transform.localPosition, pois[i + 1].transform.localPosition));
+            //go.transform.localScale = new Vector3(1, Vector3.Distance(pois[i].transform.localPosition, pois[i + 1].transform.localPosition), 1);
+            go.GetComponent<SpriteRenderer>().size = new Vector2(1, Vector3.Distance(pois[i].transform.localPosition, pois[i + 1].transform.localPosition));
             Debug.Log("pois go.transform.localScale " + go.transform.localScale.ToString());
 
             // calculate angle of rotation arount x
@@ -189,13 +189,13 @@ public class MapScript : MonoBehaviour
             float rotY = Mathf.Atan2(pois[i+1].transform.localPosition.x - pois[i].transform.localPosition.x, pois[i+1].transform.localPosition.z - pois[i].transform.localPosition.z)*Mathf.Rad2Deg;
             Debug.Log("pois rotY " + rotY);
 
-            go.transform.localRotation = Quaternion.Euler(0, rotY+90, rotX);
+            go.transform.localRotation = Quaternion.Euler(rotX, rotY, 0);
 
         }
     }
     public void rotateConnector(float f)
     {
-        poiConnectors[0].transform.localRotation = Quaternion.Euler(poiConnectors[0].transform.localRotation.x, poiConnectors[0].transform.localRotation.y, f);
+        poiConnectors[0].transform.localRotation = Quaternion.Euler(f, 0, 0);
     }
     private void Update()
     {
