@@ -10,7 +10,7 @@ public class MinimapScript : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        transform.position = new Vector3(cam.transform.position.x, 20, cam.transform.position.z);
+        transform.position = new Vector3(cam.transform.position.x, transform.position.y, cam.transform.position.z);
         transform.rotation = Quaternion.Euler(transform.rotation.eulerAngles.x, cam.transform.rotation.eulerAngles.y, transform.rotation.eulerAngles.z);
     }
 }

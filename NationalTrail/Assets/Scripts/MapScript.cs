@@ -18,7 +18,6 @@ public class MapScript : MonoBehaviour
     public GameObject poiPrefab;
     public Camera arCam;
     public GameObject poiConnectorPrefab;
-    public Text t;
     public List<GameObject> mapSamples { get { return _samples; } }
    
     private string TAG = "Generate MapScript";
@@ -36,7 +35,7 @@ public class MapScript : MonoBehaviour
     private List<GameObject> poiConnectors;
 
     private bool initCenter;
-
+    private bool heightInitialEstimation = true;
     private void Awake()
     {
         initCenter = false;
@@ -214,27 +213,33 @@ public class MapScript : MonoBehaviour
         {
             // get the child
             GameObject child = go.transform.GetChild(0).gameObject;
-            Debug.Log("srl child pos" + child.transform.position.ToString());
-            Debug.Log("srl child local rot" + child.transform.localRotation.eulerAngles.ToString());
-            t.text = ("srl child pos " + child.transform.position.ToString() + 
-                "\nsrl child local rot " + child.transform.localRotation.eulerAngles.ToString());
-
+            
             // get the world position of the camera
             Vector3 camPos = arCam.transform.position;
-            Debug.Log("srl campos " + camPos.ToString());
-            t.text += ("\nsrl cam Pos " + camPos.ToString());
 
             // get the position of the camera in the child frame of reference
             Vector3 camInConnector = go.transform.InverseTransformPoint(camPos);
-            Debug.Log("srl camInChild pos" + camInConnector.ToString());
-            t.text += ("\nsrl cam Pos In Child " + camInConnector.ToString());
 
             // calc the angle of rotation
             float rotY = Mathf.Atan2(-camInConnector.x, -camInConnector.z)*Mathf.Rad2Deg;
-            Debug.Log("srl roty " + rotY);
-            t.text += ("\nsrl roty " + rotY);
+            int HorizonHigh = 60;
+            int HorizonLow = 135;
+            float rotYPhase = 0;
+            if(rotY <HorizonHigh && rotY > -HorizonHigh)
+            {
+                rotYPhase = 0;
+            } else if(rotY>HorizonHigh && rotY < HorizonLow)
+            {
+                rotYPhase = 90;
+            }else if(rotY> HorizonLow || rotY < -HorizonLow)
+            {
+                rotYPhase = 180;
+            }else if(rotY<-HorizonHigh && rotY > HorizonLow)
+            {
+                rotYPhase = -90;
+            }
 
-            child.transform.localRotation = Quaternion.Euler(0,rotY , 0);
+            child.transform.localRotation = Quaternion.Euler(0,rotYPhase , 0);
         }
     }
 
@@ -254,8 +259,12 @@ public class MapScript : MonoBehaviour
         // create the sample 3D text
         GameObject sample = Instantiate(gpsSamplePrefab, Vector3.zero, Quaternion.identity, transform);
         sample.transform.localPosition = samplePosition;
-        sample.GetComponentsInChildren<TextMeshPro>()[0].text = acc.ToString("0.0");
-        sample.GetComponentsInChildren<TextMeshPro>()[1].text = acc.ToString("0.0");
+        foreach(TextMeshPro tmp in sample.GetComponentsInChildren<TextMeshPro>())
+        {
+            tmp.text = acc.ToString("0.0");
+        }
+        //sample.GetComponentsInChildren<TextMeshPro>()[0].text = acc.ToString("0.0");
+        //sample.GetComponentsInChildren<TextMeshPro>()[1].text = acc.ToString("0.0");
         _samples.Add(sample);
 
 
@@ -300,35 +309,60 @@ public class MapScript : MonoBehaviour
     }
     public void setMapHeight()
     {
-        // loop on all pois find 2 closest
-        GameObject minGo1 = pois[0];
-        float dist1 = 999999;
-        GameObject minGo2 = pois[1];
-        float dist2 = 999999;
-        foreach (GameObject go in pois)
+        if (heightInitialEstimation)
         {
-            float distSqrd = Mathf.Pow(arCam.transform.position.x - go.transform.position.x, 2) + Mathf.Pow(arCam.transform.position.z - go.transform.position.z, 2);
-            if (distSqrd < dist1)
+            // loop on all pois find 2 closest
+            GameObject minGo1 = pois[0];
+            float dist1 = 999999;
+            GameObject minGo2 = pois[1];
+            float dist2 = 999999;
+            foreach (GameObject go in pois)
             {
-                dist1 = distSqrd;
-                minGo1 = go;
+                float distSqrd = Mathf.Pow(arCam.transform.position.x - go.transform.position.x, 2) + Mathf.Pow(arCam.transform.position.z - go.transform.position.z, 2);
+                if (distSqrd < dist1)
+                {
+                    dist1 = distSqrd;
+                    minGo1 = go;
+                }
+                else if (distSqrd < dist2)
+                {
+                    dist2 = distSqrd;
+                    minGo2 = go;
+                }
             }
-            else if (distSqrd < dist2)
+            //now i have the two closest game object i will find my height
+            // THIS ENTIRE ALGORITHM IS FLAWED!!! THE GROUND UP AND DOWN BETWEEN POIS IS NOT LINEAR,
+            // SOMETIMES HIGHER (OR LOWER) THAN CALCULATED HEIGHT
+            // THIS IS CAUSING THE MAP TO RISE ABOVE GROUND IN AN UNSEXY FASHION
+            // The solution is to reelevate the map every time i am on a poi (because pois have known locations)
             {
-                dist2 = distSqrd;
-                minGo2 = go;
+                float heightOfCurrGroundAboveSeaLevel = (minGo1.GetComponent<PoiScript>().centerAlt * dist2 + minGo2.GetComponent<PoiScript>().centerAlt * dist1) / (dist1 + dist2);
+                float heightOfCurrGroundRelativeToMapCenter = heightOfCurrGroundAboveSeaLevel - defaultAlt;
+                float howMuchToLiftTheMap = -heightOfCurrGroundRelativeToMapCenter;
+                //now take into account the fact the the user is also moving in the AR coordinate system on the y axis
+                //and that the user is holding the cam at aprx height of 1.1 meters
+                //this variable will theoratically stay almost constant as the ar cam y position goes up the how much to lift goes down
+                float howMuchToLiftTheMapIfPhoneIsHandHeld = arCam.transform.position.y + howMuchToLiftTheMap - 1.1f;
+                transform.position = new Vector3(transform.position.x, howMuchToLiftTheMapIfPhoneIsHandHeld, transform.position.z);
             }
         }
-        //now i have the two closest game object i will find my height
+    }
 
-        float heightOfCurrGroundAboveSeaLevel = (minGo1.GetComponent<PoiScript>().centerAlt * dist2 + minGo2.GetComponent<PoiScript>().centerAlt * dist1) / (dist1 + dist2);
-        float heightOfCurrGroundRelativeToMapCenter = heightOfCurrGroundAboveSeaLevel - defaultAlt;
-        float howMuchToLiftTheMap = -heightOfCurrGroundRelativeToMapCenter;
-        //now take into account the fact the the user is also moving in the AR coordinate system on the y axis
-        //and that the user is holding the cam at aprx height of 1.1 meters
-        //this variable will theoratically stay almost constant as the ar cam y position goes up the how much to lift goes down
-        float howMuchToLiftTheMapIfPhoneIsHandHeld = arCam.transform.position.y + howMuchToLiftTheMap - 1.1f;
-        transform.position = new Vector3(transform.position.x, howMuchToLiftTheMapIfPhoneIsHandHeld, transform.position.z);
+    public void OnCamTriggeredPoi(Collider poi)
+    {
+        // this will invoke the dependency of the height map from the y value of the camera
+        // after this line the height of the map will be lock to the height of the first
+        heightInitialEstimation = false;
 
+        // If i could count on the AR of the phone to give accurate y axis changes during a long period of time than this next lines are redundant
+        // but just to make sure the height of the map is correct i will run this code every time the user is passing a poi
+        // set the height of the map to a fixed height based on the height of the poi (assuming user is walking on ground + holding the phone at 1.1m height above ground)
+        float poiLocalYInMap = poi.gameObject.transform.localPosition.y;
+        float camHeightInAR = arCam.transform.position.y;
+        float userFeetHeightInAR = camHeightInAR - 1.1f;
+        //how much to lift the map:
+        float liftTheMap = userFeetHeightInAR - poiLocalYInMap;
+        // change map height
+        transform.position = new Vector3(transform.position.x, liftTheMap,transform.position.z);
     }
 }

@@ -78,20 +78,17 @@ public class GpsScript : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        Debug.Log("ggg update");
 
         text.text = skipSamples.ToString();
         if (isNativeAndroidGps == false)
         {
             pre = "U: ";
-            Debug.Log("ggg unity");
 
             unityGPS();
 
         }
         else
         {
-            Debug.Log("ggg android");
 
             pre = "A: ";
             androidGPS();
@@ -125,14 +122,9 @@ public class GpsScript : MonoBehaviour
 
     private void unityGPS()
     {
-        Debug.Log("ggg status "+Input.location.status.ToString());
-        Debug.Log("ggg timestamp "+Input.location.lastData.timestamp.ToString());
-        Debug.Log("ggg gpsOn "+_gpsOn.ToString());
-        Debug.Log("ggg acc "+ Input.location.lastData.horizontalAccuracy);
 
         if (Input.location.status == LocationServiceStatus.Running && Input.location.lastData.timestamp > prevTimeStamp && _gpsOn && Input.location.lastData.horizontalAccuracy < 8.0f)
         {
-            Debug.Log("ggg true");
 
             inLat = Input.location.lastData.latitude;
             inLon = Input.location.lastData.longitude;
@@ -147,10 +139,6 @@ public class GpsScript : MonoBehaviour
             else
                 OnGpsUpdated();
             
-        }
-        else
-        {
-            Debug.Log("ggg false");
         }
     }
 
