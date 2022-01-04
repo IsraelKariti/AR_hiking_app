@@ -14,13 +14,15 @@ public class GpsScript : MonoBehaviour
     private string TAG = "GpsScript";
     private double prevTimeStamp;
     //private int limitSamples = 10;
-    private int skipSamples = 10;
+    private int _skipSamples = 10;
     private float _avgLat;
     private float _avgLon;
     private bool _gpsOn;
+    private int _sampleCountForInitialMapPosition=0;
+    public int sampleCountForInitialMapPosition { get { return _sampleCountForInitialMapPosition; } }
     public float avgLat { get { return _avgLat; } }
     public float avgLon { get { return _avgLon; } }
-    
+    public int skipSamples { get { return _skipSamples; } }
     // listener for the map+ground
     public delegate void GpsUpdatedSetSampleEventHandler(double lat, double lon, float acc);
     public event GpsUpdatedSetSampleEventHandler GpsUpdatedSetMap;
@@ -79,7 +81,7 @@ public class GpsScript : MonoBehaviour
     void Update()
     {
 
-        text.text = skipSamples.ToString();
+        text.text = _skipSamples.ToString();
         if (isNativeAndroidGps == false)
         {
             pre = "U: ";
@@ -113,8 +115,8 @@ public class GpsScript : MonoBehaviour
 
             lastAndroidGPSTimeStamp = time;
 
-            if (skipSamples > 0)
-                skipSamples--;
+            if (_skipSamples > 0)
+                _skipSamples--;
             else
                 OnGpsUpdated();
         }
@@ -134,10 +136,13 @@ public class GpsScript : MonoBehaviour
 
             prevTimeStamp = Input.location.lastData.timestamp;
 
-            if (skipSamples > 0)
-                skipSamples--;
+            if (_skipSamples > 0)
+                _skipSamples--;
             else
+            {
+                _sampleCountForInitialMapPosition++;
                 OnGpsUpdated();
+            }
             
         }
     }

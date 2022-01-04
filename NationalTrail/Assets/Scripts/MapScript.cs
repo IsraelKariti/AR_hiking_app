@@ -11,13 +11,14 @@ using System.IO;
 // the variables that define this map is: lat+lon+alt
 public class MapScript : MonoBehaviour
 {
-    public double centerLat { get { return _centerLat; } set { _centerLat = value; } }
-    public double centerLon { get { return _centerLon; } set { _centerLon = value; } }
     public GpsScript gpsScript;
     public GameObject gpsSamplePrefab;
     public GameObject poiPrefab;
     public Camera arCam;
     public GameObject poiConnectorPrefab;
+
+    public double centerLat { get { return _centerLat; } set { _centerLat = value; } }
+    public double centerLon { get { return _centerLon; } set { _centerLon = value; } }
     public List<GameObject> mapSamples { get { return _samples; } }
    
     private string TAG = "Generate MapScript";
@@ -118,10 +119,6 @@ public class MapScript : MonoBehaviour
         connectPois();
 
         gpsScript.GpsUpdatedSetMap += OnGpsUpdated;
-
-        //setConnectorsRotation();
-
-
     }
     // add all the pois in the map
     private void addPois()
@@ -153,12 +150,6 @@ public class MapScript : MonoBehaviour
         // assuming the pois are in their order of walking 
         for (int i = 0; i < pois.Count - 1; i++)
         {
-            Debug.Log("pois pois[i].transform.localPosition.x " + pois[i].transform.localPosition.x);
-            Debug.Log("pois pois[i].transform.localPosition.y " + pois[i].transform.localPosition.y);
-            Debug.Log("pois pois[i].transform.localPosition.z " + pois[i].transform.localPosition.z);
-            Debug.Log("pois pois[i+1].transform.localPosition.x " + pois[i+1].transform.localPosition.x);
-            Debug.Log("pois pois[i+1].transform.localPosition.y " + pois[i+1].transform.localPosition.y);
-            Debug.Log("pois pois[i+1].transform.localPosition.z " + pois[i+1].transform.localPosition.z);
             // get the location of the connector between pois
             float x = (pois[i].transform.localPosition.x + pois[i + 1].transform.localPosition.x) / 2;
             float y = (pois[i].transform.localPosition.y + pois[i + 1].transform.localPosition.y) / 2;
@@ -192,7 +183,6 @@ public class MapScript : MonoBehaviour
             Debug.Log("pois rotY " + rotY);
 
             goTop.transform.localRotation = Quaternion.Euler(rotX, rotY, 0);
-            //goBottom.transform.localRotation = Quaternion.Euler(0, 180f, 0);
         }
     }
     public void rotateConnector(float f)
@@ -309,7 +299,7 @@ public class MapScript : MonoBehaviour
     }
     public void setMapHeight()
     {
-        if (heightInitialEstimation)
+        if (heightInitialEstimation&& gpsScript.sampleCountForInitialMapPosition > 3)
         {
             // loop on all pois find 2 closest
             GameObject minGo1 = pois[0];
@@ -348,21 +338,25 @@ public class MapScript : MonoBehaviour
         }
     }
 
-    public void OnCamTriggeredPoi(Collider poi)
+    // this is called when the user (holding the phone and camera) is above the poi
+    public void OnCamTriggeredPoiEnter(Collider turn)
     {
         // this will invoke the dependency of the height map from the y value of the camera
         // after this line the height of the map will be lock to the height of the first
-        heightInitialEstimation = false;
+        if (gpsScript.sampleCountForInitialMapPosition > 3)// this should only occur if the map is positioned already geographcally
+        {
+            heightInitialEstimation = false;
 
-        // If i could count on the AR of the phone to give accurate y axis changes during a long period of time than this next lines are redundant
-        // but just to make sure the height of the map is correct i will run this code every time the user is passing a poi
-        // set the height of the map to a fixed height based on the height of the poi (assuming user is walking on ground + holding the phone at 1.1m height above ground)
-        float poiLocalYInMap = poi.gameObject.transform.localPosition.y;
-        float camHeightInAR = arCam.transform.position.y;
-        float userFeetHeightInAR = camHeightInAR - 1.1f;
-        //how much to lift the map:
-        float liftTheMap = userFeetHeightInAR - poiLocalYInMap;
-        // change map height
-        transform.position = new Vector3(transform.position.x, liftTheMap,transform.position.z);
+            // If i could count on the AR of the phone to give accurate y axis changes during a long period of time than this next lines are redundant
+            // but just to make sure the height of the map is correct i will run this code every time the user is passing a poi
+            // set the height of the map to a fixed height based on the height of the poi (assuming user is walking on ground + holding the phone at 1.1m height above ground)
+            float poiLocalYInMap = turn.gameObject.transform.parent.localPosition.y;
+            float camHeightInAR = arCam.transform.position.y;
+            float userFeetHeightInAR = camHeightInAR - 1.1f;
+            //how much to lift the map:
+            float liftTheMap = userFeetHeightInAR - poiLocalYInMap;
+            // change map height
+            transform.position = new Vector3(transform.position.x, liftTheMap, transform.position.z);
+        }
     }
 }
