@@ -47,6 +47,7 @@ public class PoiScript : MonoBehaviour
 
         // create the lines that connect the turns
         connectTurn();
+
     }
     // create the path(cylinder) between the turns(the spheres)
     private void connectTurn()

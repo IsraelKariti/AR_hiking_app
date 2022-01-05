@@ -20,6 +20,7 @@ public class ChangeColorScript : MonoBehaviour
     public void changeMatColor()
     {
         colorIndex++;
+
         Color temp = colors[colorIndex%colors.Length];
 
         mat.SetColor("_Color", new Color(temp.r,temp.g,temp.b, alpha));
