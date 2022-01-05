@@ -16,7 +16,6 @@ public class MapScript : MonoBehaviour
     public GameObject poiPrefab;
     public Camera arCam;
     public GameObject poiConnectorPrefab;
-
     public double centerLat { get { return _centerLat; } set { _centerLat = value; } }
     public double centerLon { get { return _centerLon; } set { _centerLon = value; } }
     public List<GameObject> mapSamples { get { return _samples; } }
@@ -195,7 +194,6 @@ public class MapScript : MonoBehaviour
         setMapHeight();
         setConnectorsRotation();
     }
-
     public void setConnectorsRotation()
     {
         // loop on all planes
@@ -203,15 +201,14 @@ public class MapScript : MonoBehaviour
         {
             // get the child
             GameObject child = go.transform.GetChild(0).gameObject;
-            
             // get the world position of the camera
             Vector3 camPos = arCam.transform.position;
 
             // get the position of the camera in the child frame of reference
             Vector3 camInConnector = go.transform.InverseTransformPoint(camPos);
-
             // calc the angle of rotation
             float rotY = Mathf.Atan2(-camInConnector.x, -camInConnector.z)*Mathf.Rad2Deg;
+
             int HorizonHigh = 60;
             int HorizonLow = 135;
             float rotYPhase = 0;
@@ -224,11 +221,10 @@ public class MapScript : MonoBehaviour
             }else if(rotY> HorizonLow || rotY < -HorizonLow)
             {
                 rotYPhase = 180;
-            }else if(rotY<-HorizonHigh && rotY > HorizonLow)
+            }else if(rotY<-HorizonHigh && rotY > -HorizonLow)
             {
                 rotYPhase = -90;
             }
-
             child.transform.localRotation = Quaternion.Euler(0,rotYPhase , 0);
         }
     }

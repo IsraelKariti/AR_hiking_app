@@ -8,6 +8,7 @@ using System;
 public class PoiScript : MonoBehaviour
 {
     public GameObject turnPrefab;
+    public Material globalConnectorMaterial;
     public GameObject connectorPrefab;
     public double centerLat { get { return _centerLat; } }
     public double centerLon { get { return _centerLon; } }
@@ -23,6 +24,7 @@ public class PoiScript : MonoBehaviour
     private double _centerLon;
     private string _poiName;
     private float _centerAlt;
+    private int materialIndex=0;
     
     // Start is called before the first frame update
     void Awake()
@@ -46,11 +48,6 @@ public class PoiScript : MonoBehaviour
         // create the lines that connect the turns
         connectTurn();
     }
-    private void Start()
-    {
-        Debug.Log(TAG + " Start");
-
-    }
     // create the path(cylinder) between the turns(the spheres)
     private void connectTurn()
     {
@@ -63,8 +60,9 @@ public class PoiScript : MonoBehaviour
             Vector3 connectorPosition = new Vector3((float)connectorX, 0, (float)connectorZ);
 
             
-            // create the cylinder connector as child of the poi
+            // create the plane connector as child of the poi
             GameObject connector = Instantiate(connectorPrefab, connectorPosition, Quaternion.identity);
+            connector.GetComponent<MeshRenderer>().material = globalConnectorMaterial;
             connector.transform.parent = transform;
             connectorList.Add(connector);
 

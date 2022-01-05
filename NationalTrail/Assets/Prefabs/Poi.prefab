@@ -45,5 +45,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   turnPrefab: {fileID: 6726593916875482509, guid: fe6a434e4ab49bd43a770ea8b2d44556,
     type: 3}
+  globalConnectorMaterial: {fileID: 2100000, guid: 978e5535d41def04598b31f790e5917a,
+    type: 2}
   connectorPrefab: {fileID: 3968106404480196234, guid: c79d683cf65fa5640978e87869a06d9f,
     type: 3}
