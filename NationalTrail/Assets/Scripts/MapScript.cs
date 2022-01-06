@@ -16,6 +16,7 @@ public class MapScript : MonoBehaviour
     public GameObject poiPrefab;
     public Camera arCam;
     public GameObject poiConnectorPrefab;
+    public GameObject waterBuryPrefab;
     public double centerLat { get { return _centerLat; } set { _centerLat = value; } }
     public double centerLon { get { return _centerLon; } set { _centerLon = value; } }
     public List<GameObject> mapSamples { get { return _samples; } }
@@ -30,9 +31,10 @@ public class MapScript : MonoBehaviour
     private float defaultAlt = 290f;
     //private double widthMeters;//the east<-->west in meters 
     //private double lengthMeters;// the north<-->south in meters
-    private List<string> fileLines;
+    private List<string> poiFileLines;
     private List<GameObject> pois;
     private List<GameObject> poiConnectors;
+    private List<GameObject> waterBuries;
 
     private bool initCenter;
     private bool heightInitialEstimation = true;
@@ -42,7 +44,8 @@ public class MapScript : MonoBehaviour
         _samples = new List<GameObject>();// gps samples
         pois = new List<GameObject>();// point of interest(buildings, etc)
         poiConnectors = new List<GameObject>();// point of interest(buildings, etc)
-        fileLines = new List<string>();
+        waterBuries = new List<GameObject>();
+        poiFileLines = new List<string>();
 
         //TODO:
         //1) read all lines from poi file
@@ -50,7 +53,7 @@ public class MapScript : MonoBehaviour
         string line;
         while((line = reader.ReadLine())!=null)
         {
-            fileLines.Add(line);
+            poiFileLines.Add(line);
             GameObject go = Instantiate(poiPrefab, Vector3.zero, Quaternion.identity, transform);
             pois.Add(go);
 
@@ -70,10 +73,31 @@ public class MapScript : MonoBehaviour
             }
         }
         reader.Close();
-        //2) for each line instantiate poi prefab into a list
+        //2) read all lines from waterburi file
+        createWaterBuries();
     }
 
-    
+    private void createWaterBuries()
+    {
+        StreamReader reader = new StreamReader(Application.persistentDataPath + "/water_bury.txt");
+        string line;
+        while ((line = reader.ReadLine()) != null)
+        {
+            GameObject go = Instantiate(waterBuryPrefab, Vector3.zero, Quaternion.identity, transform);
+            waterBuries.Add(go);
+
+            // get all elments in line
+            string[] elements = line.Split(' ');
+
+            // set the altitude of the poi
+            go.GetComponent<WaterBuryScript>().lat = float.Parse(elements[0]);
+            go.GetComponent<WaterBuryScript>().lon = float.Parse(elements[1]);
+            go.GetComponent<WaterBuryScript>().alt = float.Parse(elements[2]);
+
+        }
+        reader.Close();
+    }
+
 
     // Start is called before the first frame update
     void Start()
@@ -88,7 +112,7 @@ public class MapScript : MonoBehaviour
         for(int i = 0;i < pois.Count;i++)
         {
             // get all elments in line
-            string[] elements = fileLines[i].Split(' ');
+            string[] elements = poiFileLines[i].Split(' ');
             Debug.Log("elementis 0: " + elements[0]) ;
 
             // create the coords
@@ -117,8 +141,29 @@ public class MapScript : MonoBehaviour
         // connect all pois to a route\path
         connectPois();
 
+        // add the water buries to the map
+        positionWaterBuries();
+
         gpsScript.GpsUpdatedSetMap += OnGpsUpdated;
     }
+
+    private void positionWaterBuries()
+    {
+        foreach(GameObject go in waterBuries)
+        {
+            // get coordinates of bury
+            double lat = go.GetComponent<WaterBuryScript>().lat;
+            double lon = go.GetComponent<WaterBuryScript>().lon;
+            double alt = go.GetComponent<WaterBuryScript>().alt;
+            // calcula the position of the center of the poi
+            double zMeters = GeoToMetersConverter.convertLatDiffToMeters(_centerLat - lat);
+            double xMeters = GeoToMetersConverter.convertLonDiffToMeters(_centerLon - lon, _centerLat);
+            double yMeters = alt - defaultAlt;
+            // position the water bury in the map
+            go.transform.position = new Vector3(-(float)xMeters, (float)yMeters, -(float)zMeters);
+        }
+    }
+
     // add all the pois in the map
     private void addPois()
     {
