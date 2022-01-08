@@ -17,6 +17,7 @@ public class MapScript : MonoBehaviour
     public Camera arCam;
     public GameObject poiConnectorPrefab;
     public GameObject waterBuryPrefab;
+    public GameObject sightPrefab;
     public double centerLat { get { return _centerLat; } set { _centerLat = value; } }
     public double centerLon { get { return _centerLon; } set { _centerLon = value; } }
     public List<GameObject> mapSamples { get { return _samples; } }
@@ -35,6 +36,7 @@ public class MapScript : MonoBehaviour
     private List<GameObject> pois;
     private List<GameObject> poiConnectors;
     private List<GameObject> waterBuries;
+    private List<GameObject> sights;
 
     private bool initCenter;
     private bool heightInitialEstimation = true;
@@ -45,6 +47,7 @@ public class MapScript : MonoBehaviour
         pois = new List<GameObject>();// point of interest(buildings, etc)
         poiConnectors = new List<GameObject>();// point of interest(buildings, etc)
         waterBuries = new List<GameObject>();
+        sights = new List<GameObject>();
         poiFileLines = new List<string>();
 
         //TODO:
@@ -75,6 +78,35 @@ public class MapScript : MonoBehaviour
         reader.Close();
         //2) read all lines from waterburi file
         createWaterBuries();
+
+        //3) create sights
+        createSights();
+    }
+
+    private void createSights()
+    {
+        StreamReader reader = new StreamReader(Application.persistentDataPath + "/sights.txt");
+        string line;
+        while ((line = reader.ReadLine()) != null)
+        {
+            GameObject go = Instantiate(sightPrefab, Vector3.zero, Quaternion.identity, transform);
+            go.GetComponent<SightScript>().arCam = arCam;
+            sights.Add(go);
+
+            // get all elments in line
+            string[] elements = line.Split(' ');
+
+            // set the altitude of the poi
+            
+            go.GetComponent<SightScript>().name = elements[0].Replace('_',' ');
+            go.GetComponent<SightScript>().lat = float.Parse(elements[1]);
+            go.GetComponent<SightScript>().lon = float.Parse(elements[2]);
+            go.GetComponent<SightScript>().alt = float.Parse(elements[3]);
+            go.GetComponent<TMP_Text>().text = elements[0].Replace('_', ' ');
+
+
+        }
+        reader.Close();
     }
 
     private void createWaterBuries()
@@ -103,9 +135,6 @@ public class MapScript : MonoBehaviour
     void Start()
     {
         
-        // calculate the center of the tile
-        //_centerLat = 32.08250;// (downLeftCornerLat + upRightCornerLat)/ 2;
-        //_centerLon = 34.77405;// (downLeftCornerLon + upRightCornerLon)/ 2;
 
         //TODO:
         //1) for each line in the file create list of 4 tuples and call each poi setCoordinates
@@ -144,7 +173,27 @@ public class MapScript : MonoBehaviour
         // add the water buries to the map
         positionWaterBuries();
 
+        // add the sights (hospital, universicty, etc) to the map
+        positionSights();
+
         gpsScript.GpsUpdatedSetMap += OnGpsUpdated;
+    }
+
+    private void positionSights()
+    {
+        foreach (GameObject go in sights)
+        {
+            // get coordinates of bury
+            double lat = go.GetComponent<SightScript>().lat;
+            double lon = go.GetComponent<SightScript>().lon;
+            double alt = go.GetComponent<SightScript>().alt;
+            // calcula the position of the center of the poi
+            double zMeters = GeoToMetersConverter.convertLatDiffToMeters(_centerLat - lat);
+            double xMeters = GeoToMetersConverter.convertLonDiffToMeters(_centerLon - lon, _centerLat);
+            double yMeters = alt - defaultAlt;
+            // position the sight in the map
+            go.transform.localPosition = new Vector3(-(float)xMeters, (float)yMeters, -(float)zMeters);
+        }
     }
 
     private void positionWaterBuries()
@@ -160,7 +209,7 @@ public class MapScript : MonoBehaviour
             double xMeters = GeoToMetersConverter.convertLonDiffToMeters(_centerLon - lon, _centerLat);
             double yMeters = alt - defaultAlt;
             // position the water bury in the map
-            go.transform.position = new Vector3(-(float)xMeters, (float)yMeters, -(float)zMeters);
+            go.transform.localPosition = new Vector3(-(float)xMeters, (float)yMeters, -(float)zMeters);
         }
     }
 
@@ -237,8 +286,38 @@ public class MapScript : MonoBehaviour
     private void Update()
     {
         setMapHeight();
-        setConnectorsRotation();
+        adjustConnectors();
     }
+
+    private void adjustConnectors()
+    {
+        setConnectorsRotation();
+        setConnectorsColor();
+    }
+
+    private void setConnectorsColor()
+    {
+        // loop on all connector
+        foreach (GameObject go in poiConnectors)
+        {
+            // get the connector
+            GameObject child = go.transform.GetChild(0).gameObject;
+            
+            // get the world position of the camera
+            Vector3 camPos = arCam.transform.position;
+
+            // check dist cam-connector
+            float dist = Vector3.Distance(camPos, child.transform.position);
+
+            SpriteRenderer renderer = child.GetComponent<SpriteRenderer>();
+            Material mat = renderer.material;
+            Color c = mat.GetColor("_Color");
+            c.a = 0.2f+dist / 100.0f;
+            mat.SetColor("_Color", c);
+
+        }
+    }
+
     public void setConnectorsRotation()
     {
         // loop on all planes
@@ -251,11 +330,25 @@ public class MapScript : MonoBehaviour
 
             // get the position of the camera in the child frame of reference
             Vector3 camInConnector = go.transform.InverseTransformPoint(camPos);
-            // calc the angle of rotation
+            // calc the angle of rotation between the connector and the camera
             float rotY = Mathf.Atan2(-camInConnector.x, -camInConnector.z)*Mathf.Rad2Deg;
 
-            int HorizonHigh = 60;
-            int HorizonLow = 135;
+            int HorizonHigh;
+            int HorizonLow;
+            int responsiveRadius = 20;
+            // make the rotation threshold less responsive for closer connectors
+            // because they take so much screen space the you can notice them easily even from low angle
+            if(Vector3.Distance(child.transform.position, arCam.transform.position) < responsiveRadius)
+            {
+                HorizonHigh = 75;
+                HorizonLow = 135;
+            }
+            else
+            {// make the rotation threshold more responsive for farther connectors
+             // because they take so little screen space the you can't notice them from less than 45 degree angle
+                HorizonHigh = 45;
+                HorizonLow = 135;
+            }
             float rotYPhase = 0;
             if(rotY <HorizonHigh && rotY > -HorizonHigh)
             {
