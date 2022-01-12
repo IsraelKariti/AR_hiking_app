@@ -49,6 +49,34 @@ public class PoiScript : MonoBehaviour
         connectTurn();
 
     }
+    private void calcCenter()
+    {
+        double avgLat = 0;
+        double avgLon = 0;
+        foreach (Tuple<double, double> coor in coordList)
+        {
+            avgLat += coor.Item1;
+            avgLon += coor.Item2;
+        }
+        avgLat /= coordList.Count;
+        avgLon /= coordList.Count;
+
+        _centerLat = avgLat;
+        _centerLon = avgLon;
+    }
+    private void createTurns()
+    {
+        foreach (Tuple<double, double> coor in coordList)
+        {
+            // calculate location of every specific turn inside this poi
+            Vector3 turnLocation = calcLocalPositionOfTurnInPoi(coor);
+
+            // calculate
+            GameObject sphereTurn = Instantiate(turnPrefab, turnLocation, Quaternion.identity);
+            turnList.Add(sphereTurn);
+            sphereTurn.transform.parent = transform;
+        }
+    }
     // create the path(cylinder) between the turns(the spheres)
     private void connectTurn()
     {
@@ -88,19 +116,7 @@ public class PoiScript : MonoBehaviour
         return Mathf.Sqrt(x_2 + z_2);
     }
 
-    private void createTurns()
-    {
-        foreach (Tuple<double, double> coor in coordList)
-        {
-            // calculate location of every specific turn inside this poi
-            Vector3 turnLocation = calcLocalPositionOfTurnInPoi(coor);
-
-            // calculate
-            GameObject sphereTurn = Instantiate(turnPrefab, turnLocation, Quaternion.identity);
-            turnList.Add(sphereTurn);
-            sphereTurn.transform.parent = transform;
-        }
-    }
+    
 
     //calculate the location of the turn inside the coordinate space of the poi
     private Vector3 calcLocalPositionOfTurnInPoi(Tuple<double,double> coor)
@@ -113,20 +129,17 @@ public class PoiScript : MonoBehaviour
         return location;
     }
 
-    private void calcCenter()
+    public void positionPoiInMap()
     {
-        double avgLat = 0;
-        double avgLon = 0;
-        foreach(Tuple<double, double> coor in coordList)
-        {
-            avgLat += coor.Item1;
-            avgLon += coor.Item2;
-        }
-        avgLat /= coordList.Count;
-        avgLon /= coordList.Count;
+        MapScript mapScript = transform.parent.GetComponent<MapScript>();
 
-        _centerLat = avgLat;
-        _centerLon = avgLon;
+        // calcula the position of the center of the poi
+        double zMeters = GeoToMetersConverter.convertLatDiffToMeters(mapScript.MapCenterLat - _centerLat);
+        double xMeters = GeoToMetersConverter.convertLonDiffToMeters(mapScript.MapCenterLon - _centerLon, mapScript.MapCenterLat);
+        float yMeters = _centerAlt - mapScript.MapCenterAlt;
+        // in this area of the world the positive z axis is opposite direction of the north heading
+        // so we add the minus sign to z
+        gameObject.transform.localPosition = new Vector3(-(float)xMeters, yMeters, -(float)zMeters);
     }
 
 }

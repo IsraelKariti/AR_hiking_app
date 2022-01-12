@@ -43,6 +43,7 @@ public class SightScript : MonoBehaviour
         // position the sight in the map
         transform.localPosition = new Vector3(-(float)xMeters, (float)yMeters, -(float)zMeters);
     }
+    // this will change the font and background size
     private void beautifySightText()
     {
         float dist = Vector3.Distance(_arCam.transform.position, transform.position);
