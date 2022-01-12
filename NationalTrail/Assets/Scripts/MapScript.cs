@@ -18,18 +18,20 @@ public class MapScript : MonoBehaviour
     public GameObject poiConnectorPrefab;
     public GameObject waterBuryPrefab;
     public GameObject sightPrefab;
-    public double centerLat { get { return _centerLat; } set { _centerLat = value; } }
-    public double centerLon { get { return _centerLon; } set { _centerLon = value; } }
+    public double MapCenterLat { get { return mapcenterLat; } set { mapcenterLat = value; } }
+    public double MapCenterLon { get { return mapcenterLon; } set { mapcenterLon = value; } }
+    public float MapCenterAlt { get => mapCenterAlt; set => mapCenterAlt = value; }
     public List<GameObject> mapSamples { get { return _samples; } }
-   
+
+
     private string TAG = "Generate MapScript";
    
     private List<GameObject> _samples;
     // all the way to Oren center
 
-    private double _centerLat;
-    private double _centerLon;
-    private float defaultAlt = 290f;
+    private double mapcenterLat;
+    private double mapcenterLon;
+    private float mapCenterAlt = 290f;
     //private double widthMeters;//the east<-->west in meters 
     //private double lengthMeters;// the north<-->south in meters
     private List<string> poiFileLines;
@@ -40,6 +42,9 @@ public class MapScript : MonoBehaviour
 
     private bool initCenter;
     private bool heightInitialEstimation = true;
+
+    private int indexSight = 0;
+    private bool activlyRearrangingSights = false;
     private void Awake()
     {
         initCenter = false;
@@ -69,9 +74,9 @@ public class MapScript : MonoBehaviour
             // initialize the LAT+LON+ALT of the map to be from the first poi
             if(initCenter == false)
             {
-                _centerLat = float.Parse(elements[1].Split(',')[0]);
-                _centerLon = float.Parse(elements[1].Split(',')[1]);
-                defaultAlt = float.Parse(elements[elements.Length - 1]);
+                mapcenterLat = float.Parse(elements[1].Split(',')[0]);
+                mapcenterLon = float.Parse(elements[1].Split(',')[1]);
+                MapCenterAlt = float.Parse(elements[elements.Length - 1]);
                 initCenter = true;
             }
         }
@@ -91,22 +96,27 @@ public class MapScript : MonoBehaviour
         {
             GameObject go = Instantiate(sightPrefab, Vector3.zero, Quaternion.identity, transform);
             go.GetComponent<SightScript>().arCam = arCam;
-            sights.Add(go);
 
             // get all elments in line
             string[] elements = line.Split(' ');
 
             // set the altitude of the poi
-            
-            go.GetComponent<SightScript>().name = elements[0].Replace('_',' ');
-            go.GetComponent<SightScript>().lat = float.Parse(elements[1]);
-            go.GetComponent<SightScript>().lon = float.Parse(elements[2]);
-            go.GetComponent<SightScript>().alt = float.Parse(elements[3]);
+            SightScript sightScript = go.GetComponent<SightScript>();
+            sightScript.Name = elements[0].Replace('_',' ');
+            sightScript.Lat = float.Parse(elements[1]);
+            sightScript.Lon = float.Parse(elements[2]);
+            sightScript.Alt = float.Parse(elements[3]);
+            sightScript.arCam = arCam;
             go.GetComponent<TMP_Text>().text = elements[0].Replace('_', ' ');
 
+            // add to list of sights/signs
+            sights.Add(go);
 
         }
         reader.Close();
+
+        // sort the list of sights by distance from camera
+        sights.Sort(new CompareSightDist());
     }
 
     private void createWaterBuries()
@@ -163,7 +173,7 @@ public class MapScript : MonoBehaviour
         //1) set all height with loop from file
         foreach(GameObject go in pois)
         {
-            float y = go.GetComponent<PoiScript>().centerAlt - defaultAlt;
+            float y = go.GetComponent<PoiScript>().centerAlt - MapCenterAlt;
             go.transform.position = new Vector3(go.transform.position.x, y, go.transform.position.z);
         }
 
@@ -173,28 +183,37 @@ public class MapScript : MonoBehaviour
         // add the water buries to the map
         positionWaterBuries();
 
-        // add the sights (hospital, universicty, etc) to the map
-        positionSights();
+        // position the sights (hospital, universicty, etc) to the map
+        //positionSights();// the sights will position themselves
+
+        InvokeRepeating("SetRearrangingSightsActive", 0, 2);
 
         gpsScript.GpsUpdatedSetMap += OnGpsUpdated;
     }
-
-    private void positionSights()
+    // this function induce the signs to be rearrange
+    private void SetRearrangingSightsActive()
     {
-        foreach (GameObject go in sights)
-        {
-            // get coordinates of bury
-            double lat = go.GetComponent<SightScript>().lat;
-            double lon = go.GetComponent<SightScript>().lon;
-            double alt = go.GetComponent<SightScript>().alt;
-            // calcula the position of the center of the poi
-            double zMeters = GeoToMetersConverter.convertLatDiffToMeters(_centerLat - lat);
-            double xMeters = GeoToMetersConverter.convertLonDiffToMeters(_centerLon - lon, _centerLat);
-            double yMeters = alt - defaultAlt;
-            // position the sight in the map
-            go.transform.localPosition = new Vector3(-(float)xMeters, (float)yMeters, -(float)zMeters);
-        }
+        sights.Sort(new CompareSightDist());
+        indexSight = 0;
+        activlyRearrangingSights = true;
     }
+    //private void positionSights()
+    //{
+    //    foreach (GameObject go in sights)
+    //    {
+    //        // get coordinates of bury
+    //        SightScript sightScript = go.GetComponent<SightScript>();
+    //        double lat = sightScript.lat;
+    //        double lon = sightScript.lon;
+    //        double alt = sightScript.alt;
+    //        // calcula the position of the center of the poi
+    //        double zMeters = GeoToMetersConverter.convertLatDiffToMeters(mapcenterLat - lat);
+    //        double xMeters = GeoToMetersConverter.convertLonDiffToMeters(mapcenterLon - lon, mapcenterLat);
+    //        double yMeters = alt - this.MapCenterAlt;
+    //        // position the sight in the map
+    //        go.transform.localPosition = new Vector3(-(float)xMeters, (float)yMeters, -(float)zMeters);
+    //    }
+    //}
 
     private void positionWaterBuries()
     {
@@ -205,9 +224,9 @@ public class MapScript : MonoBehaviour
             double lon = go.GetComponent<WaterBuryScript>().lon;
             double alt = go.GetComponent<WaterBuryScript>().alt;
             // calcula the position of the center of the poi
-            double zMeters = GeoToMetersConverter.convertLatDiffToMeters(_centerLat - lat);
-            double xMeters = GeoToMetersConverter.convertLonDiffToMeters(_centerLon - lon, _centerLat);
-            double yMeters = alt - defaultAlt;
+            double zMeters = GeoToMetersConverter.convertLatDiffToMeters(mapcenterLat - lat);
+            double xMeters = GeoToMetersConverter.convertLonDiffToMeters(mapcenterLon - lon, mapcenterLat);
+            double yMeters = alt - this.MapCenterAlt;
             // position the water bury in the map
             go.transform.localPosition = new Vector3(-(float)xMeters, (float)yMeters, -(float)zMeters);
         }
@@ -230,8 +249,8 @@ public class MapScript : MonoBehaviour
         double childLon = child.centerLon;
 
         // calcula the position of the center of the poi
-        double zMeters = GeoToMetersConverter.convertLatDiffToMeters(_centerLat - childLat);
-        double xMeters = GeoToMetersConverter.convertLonDiffToMeters(_centerLon - childLon, _centerLat);
+        double zMeters = GeoToMetersConverter.convertLatDiffToMeters(mapcenterLat - childLat);
+        double xMeters = GeoToMetersConverter.convertLonDiffToMeters(mapcenterLon - childLon, mapcenterLat);
 
         // in this area of the world the positive z axis is opposite direction of the north heading
         // so we add the minus sign to z
@@ -287,6 +306,13 @@ public class MapScript : MonoBehaviour
     {
         setMapHeight();
         adjustConnectors();
+
+        // move each sight on different frame,
+        // so that the affects on one sight can be taken into account in the second sight
+        if (activlyRearrangingSights && indexSight < sights.Count)
+            sights[indexSight++].GetComponent<SightScript>().Reheight();
+        else
+            activlyRearrangingSights = false;
     }
 
     private void adjustConnectors()
@@ -374,8 +400,8 @@ public class MapScript : MonoBehaviour
         Vector3 samplePosition;
 
 
-        double z = GeoToMetersConverter.convertLatDiffToMeters(_centerLat - lat);
-        double x = GeoToMetersConverter.convertLonDiffToMeters(_centerLon - lon , _centerLat);
+        double z = GeoToMetersConverter.convertLatDiffToMeters(mapcenterLat - lat);
+        double x = GeoToMetersConverter.convertLonDiffToMeters(mapcenterLon - lon , mapcenterLat);
         double y = getElevationFromFloor();
         samplePosition = new Vector3(-(float)x, 0, -(float)z);
         // calculate the y of the sample
@@ -461,7 +487,7 @@ public class MapScript : MonoBehaviour
             // The solution is to reelevate the map every time i am on a poi (because pois have known locations)
             {
                 float heightOfCurrGroundAboveSeaLevel = (minGo1.GetComponent<PoiScript>().centerAlt * dist2 + minGo2.GetComponent<PoiScript>().centerAlt * dist1) / (dist1 + dist2);
-                float heightOfCurrGroundRelativeToMapCenter = heightOfCurrGroundAboveSeaLevel - defaultAlt;
+                float heightOfCurrGroundRelativeToMapCenter = heightOfCurrGroundAboveSeaLevel - MapCenterAlt;
                 float howMuchToLiftTheMap = -heightOfCurrGroundRelativeToMapCenter;
                 //now take into account the fact the the user is also moving in the AR coordinate system on the y axis
                 //and that the user is holding the cam at aprx height of 1.1 meters
