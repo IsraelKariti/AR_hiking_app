@@ -302,7 +302,6 @@ public class MapScript : MonoBehaviour
         if (gpsScript.sampleCountForInitialMapPosition > 3)// this should only occur if the map is positioned already geographcally
         {
             heightInitialEstimation = false;
-
             // If i could count on the AR of the phone to give accurate y axis changes during a long period of time than this next lines are redundant
             // but just to make sure the height of the map is correct i will run this code every time the user is passing a poi
             // set the height of the map to a fixed height based on the height of the poi (assuming user is walking on ground + holding the phone at 1.1m height above ground)
@@ -314,5 +313,6 @@ public class MapScript : MonoBehaviour
             // change map height
             transform.position = new Vector3(transform.position.x, liftTheMap, transform.position.z);
         }
+
     }
 }

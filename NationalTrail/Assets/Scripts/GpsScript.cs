@@ -59,7 +59,6 @@ public class GpsScript : MonoBehaviour
     void Start()
     {
         _gpsOn = true;
-        File.Delete(Application.persistentDataPath + "/coords.txt");
 
         if (isNativeAndroidGps == false)
         {
@@ -152,7 +151,6 @@ public class GpsScript : MonoBehaviour
         GpsUpdatedSetMap(inLat, inLon, inHorizontalAcc);
         GpsUpdatedCalcLeastSquares();
         float eleveationFromFloor = getElevationFromFloor(); 
-        File.AppendAllText(Application.persistentDataPath + "/coords.txt", pre+":lat:" + inLat + ":lon:" + inLon + ":acc:"+inHorizontalAcc+":alt:"+inAlt+":altAcc:"+inAltAcc+":elev:"+eleveationFromFloor.ToString("0.0")+"\n");
     }
     private float getElevationFromFloor()
     {
@@ -169,7 +167,6 @@ public class GpsScript : MonoBehaviour
     {
             GpsUpdatedSetMap(emulatorLat, emulatorLon, 0);
             GpsUpdatedCalcLeastSquares();
-            File.AppendAllText(Application.persistentDataPath + "/coords.txt", pre+ "lat: " + emulatorLat + " lon: " + emulatorLon + " acc: " + inHorizontalAcc + " alt: " + inAlt + " altAcc: " + inAltAcc + "\n");
 
         emulatorLon -= 0.00003f;
     }
