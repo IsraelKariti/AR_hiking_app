@@ -1901,6 +1901,11 @@ PrefabInstance:
       propertyPath: m_Name
       value: CameraFigure
       objectReference: {fileID: 0}
+    - target: {fileID: 4867798220408833902, guid: fe99663c38d984d4297cf7cef29d44d8,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 5232209404973654369, guid: fe99663c38d984d4297cf7cef29d44d8,
         type: 3}
       propertyPath: m_LocalPosition.z
