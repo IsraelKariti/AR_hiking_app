@@ -23,15 +23,15 @@ public class SightScript : MonoBehaviour
     private float h;
     private float w;
     private int sightLayerMask = 1 << 3;
+    public bool isPositioned = false;
     private void Awake()
     {
         File.Delete(Application.persistentDataPath + "/log.txt");
     }
-    private void Start()
-    {
+
+    public void setSightOnMap() {
         positionSightOnMap();
         beautifySightText();
-
     }
     private void positionSightOnMap()
     {
@@ -70,23 +70,9 @@ public class SightScript : MonoBehaviour
     }
     private void Update()
     {
-        rotateTowardCam();
-        //resize();
+        if(isPositioned)
+           rotateTowardCam();
     }
-
-    // THERE IS NO NEED FOR RESIZE AS THE CLOSER OBJECTS WILL APPEAR BIGGER ANYWAY
-    //private void resize()
-    //{
-    //    float dist = Vector3.Distance(_arCam.transform.position, transform.position);
-    //    float scale = 10000.0f;
-    //    float ratio = (scale-dist) / scale;// for example if a sight is 3km away than (10000-3000)/10000 = 0.7 of the maximal size
-    //                                       // and another sight is 9km away than (10000-9000)/10000 = 0.1 of the maximal size
-    //    if (ratio < 0)
-    //        ratio = 0.1f;
-    //    RectTransform rectTransform = GetComponent<RectTransform>();
-    //    rectTransform.sizeDelta = new Vector2(ratio, ratio);
-
-    //}
 
     private void rotateTowardCam()
     {
@@ -102,10 +88,6 @@ public class SightScript : MonoBehaviour
 
     // this function is called from MapScript every second (in the order of sights in the list)
     // this function responsible for moving a sign/sight up or down so that the signs won't hide each other
-    public void ReheightBU()
-    {
-
-    }
     public void Reheight()
     {
         bool flag = false;
@@ -156,7 +138,7 @@ public class SightScript : MonoBehaviour
     }
 
     // check if all 4 corners of sight is visible to origin
-    public bool checkIfCornersHiddenToOrigin()
+    private bool checkIfCornersHiddenToOrigin()
     {
         string log= ""+ DateTime.Now+" "+name + " pos: " + transform.position.y+" ";
         RaycastHit hit;
@@ -187,7 +169,7 @@ public class SightScript : MonoBehaviour
         return flag;
     }
 
-    public Vector3[] getCorners()
+    private Vector3[] getCorners()
     {
         return new Vector3[] { transform.TransformPoint(new Vector3(0, 0, 2)) ,
                             transform.TransformPoint(new Vector3(w/2, h/2, 2)),

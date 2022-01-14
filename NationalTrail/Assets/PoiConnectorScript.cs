@@ -2,11 +2,12 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System.IO;
 
 public class PoiConnectorScript : MonoBehaviour
 {
     private Camera arCam;
-
+    
     public Camera ArCam { get => arCam; set => arCam = value; }
 
     public void positionInMap(GameObject go1, GameObject go2)
@@ -17,7 +18,9 @@ public class PoiConnectorScript : MonoBehaviour
         float z = (go1.transform.localPosition.z + go2.transform.localPosition.z) / 2;
         transform.localPosition = new Vector3(x, y, z);
 
-        GetComponentInChildren<SpriteRenderer>().size = new Vector2(1, Vector3.Distance(go1.transform.localPosition, go2.transform.localPosition));
+        float poiDist = Vector3.Distance(go1.transform.localPosition, go2.transform.localPosition);
+        GetComponentInChildren<SpriteRenderer>().size = new Vector2(1, poiDist);
+        GetComponentInChildren<BoxCollider>().size = new Vector3(1, poiDist-2, 1);
 
         // calculate angle of rotation arount x
         // 1) calc dist on x z plane
@@ -105,4 +108,6 @@ public class PoiConnectorScript : MonoBehaviour
         c.a = 0.2f + dist / 100.0f;
         mat.SetColor("_Color", c);
     }
+
+    
 }

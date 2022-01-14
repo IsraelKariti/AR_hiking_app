@@ -13,7 +13,6 @@ public class GpsScript : MonoBehaviour
     public Camera arCam;
     private string TAG = "GpsScript";
     private double prevTimeStamp;
-    //private int limitSamples = 10;
     private int _skipSamples = 10;
     private float _avgLat;
     private float _avgLon;
@@ -29,27 +28,20 @@ public class GpsScript : MonoBehaviour
     public delegate void GpsUpdatedLeastSquaresEventHandler();
     public event GpsUpdatedLeastSquaresEventHandler GpsUpdatedCalcLeastSquares;
     public bool gpsOn { set { _gpsOn = value; } }
-    private double emulatorLat = 31.26255f;
-    private double emulatorLon = 34.79350f;
+
     private double inLat;// the input location lat 
     private double inLon;
     private float inHorizontalAcc;
     private double inAlt;
     private float inAltAcc;
 
-    //ANDROID GPS
-    AndroidJavaObject gpsProvider;
-    private long lastAndroidGPSTimeStamp = 0;
 
-    bool isNativeAndroidGps;
-    string pre;
     private void Awake()
     {
         if (!Input.location.isEnabledByUser) //FIRST IM CHACKING FOR PERMISSION IF "true" IT MEANS USER GAVED PERMISSION FOR USING LOCATION INFORMATION
         {
             Permission.RequestUserPermission(Permission.FineLocation);
         }
-        isNativeAndroidGps = false;
         // unity gps is superrior to native android gps. when i walk in a straight line everything is fine,
         // but when i aim the phone sideways to look at a building the android gps throws the results around.
         // it doesn't deal well with moving the phone all over
@@ -59,21 +51,7 @@ public class GpsScript : MonoBehaviour
     void Start()
     {
         _gpsOn = true;
-
-        if (isNativeAndroidGps == false)
-        {
-            Input.location.Start(0, 1);
-        }
-        else
-        {
-            //=======================GPS ANDROID==========================
-            // create the current UNITY activity
-            AndroidJavaClass jc = new AndroidJavaClass("com.unity3d.player.UnityPlayer");
-            AndroidJavaObject unityActivity = jc.GetStatic<AndroidJavaObject>("currentActivity");
-
-            //instantiate the android plugin
-            gpsProvider = new AndroidJavaObject("com.example.gpsplugin.GPSProvider", unityActivity);
-        }
+        Input.location.Start(0, 1);
     }
 
     // Update is called once per frame
@@ -81,45 +59,10 @@ public class GpsScript : MonoBehaviour
     {
 
         text.text = _skipSamples.ToString();
-        if (isNativeAndroidGps == false)
-        {
-            pre = "U: ";
-
-            unityGPS();
-
-        }
-        else
-        {
-
-            pre = "A: ";
-            androidGPS();
-        }
+        unityGPS();
     }
 
-    private void androidGPS()
-    {
-        long time = gpsProvider.Get<long>("time");
-        //bool availability = gpsProvider.Get<bool>("availability");
-
-        if (time > lastAndroidGPSTimeStamp&& _gpsOn)
-        {
-            // calculate new lat-lon for the origin 
-            inLat = gpsProvider.Get<double>("lat");
-
-            inLon = gpsProvider.Get<double>("lon");
-
-            inHorizontalAcc = gpsProvider.Get<float>("accuracy");
-            inAlt = gpsProvider.Get<double>("alt");
-            inAltAcc = gpsProvider.Get<float>("altAcc");
-
-            lastAndroidGPSTimeStamp = time;
-
-            if (_skipSamples > 0)
-                _skipSamples--;
-            else
-                OnGpsUpdated();
-        }
-    }
+   
 
     private void unityGPS()
     {
@@ -150,33 +93,12 @@ public class GpsScript : MonoBehaviour
     {
         GpsUpdatedSetMap(inLat, inLon, inHorizontalAcc);
         GpsUpdatedCalcLeastSquares();
-        float eleveationFromFloor = getElevationFromFloor(); 
     }
-    private float getElevationFromFloor()
-    {
-        RaycastHit hit;
-
-        if (Physics.Raycast(transform.position, -Vector3.up, out hit))
-        {
-            return hit.distance;
-        }
-        else
-            return 1.1f;// the default height of smartphone above ground while held by user
-    }
-    public void EmulateGps()
-    {
-            GpsUpdatedSetMap(emulatorLat, emulatorLon, 0);
-            GpsUpdatedCalcLeastSquares();
-
-        emulatorLon -= 0.00003f;
-    }
+  
 
     public void switchGPS(bool val)
     {
         gpsOn = val;
     }
-    public void toggleGpsAndroidSource(bool val)
-    {
-        isNativeAndroidGps = val;
-    }
+   
 }

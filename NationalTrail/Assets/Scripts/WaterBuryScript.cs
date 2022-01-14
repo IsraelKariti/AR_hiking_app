@@ -12,12 +12,9 @@ public class WaterBuryScript : MonoBehaviour
     public double lon { get { return _lon; } set { _lon = value; } }
     public float alt { get { return _alt; } set { _alt = value; } }
     private float y = 0;
-    private void Start()
-    {
-        positionWaterBuryInMap();
-    }
+    public bool isPositioned = false;
 
-    private void positionWaterBuryInMap()
+    public void positionWaterBuryInMap()
     {
         MapScript mapScript = transform.parent.GetComponent<MapScript>();
         // calcula the position of the center of the poi
@@ -31,7 +28,11 @@ public class WaterBuryScript : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        y += Time.deltaTime;
-        transform.localPosition = new Vector3(transform.localPosition.x, Mathf.Sin(y), transform.localPosition.z); ;
+        if (isPositioned)
+        {
+            y += Time.deltaTime;
+            transform.localPosition = new Vector3(transform.localPosition.x, Mathf.Sin(y), transform.localPosition.z);
+        }
+         
     }
 }

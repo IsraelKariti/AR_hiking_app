@@ -25,13 +25,13 @@ public class MapScript : MonoBehaviour
 
 
     private string TAG = "Generate MapScript";
-   
+
     private List<GameObject> _samples;
     // all the way to Oren center
 
     private double mapcenterLat;
     private double mapcenterLon;
-    private float mapCenterAlt = 290f;
+    private float mapCenterAlt;
     //private double widthMeters;//the east<-->west in meters 
     //private double lengthMeters;// the north<-->south in meters
     private List<string> poiFileLines;
@@ -40,14 +40,13 @@ public class MapScript : MonoBehaviour
     private List<GameObject> waterBuries;
     private List<GameObject> sights;
 
-    private bool initCenter;
-    private bool heightInitialEstimation = true;
+    private bool isHeightLocked = false;
 
     private int indexSight = 0;
     private bool activlyRearrangingSights = false;
+    private bool isMapToppingsIntialized = false;
     private void Awake()
     {
-        initCenter = false;
         _samples = new List<GameObject>();// gps samples
         pois = new List<GameObject>();// point of interest(buildings, etc)
         poiConnectors = new List<GameObject>();// point of interest(buildings, etc)
@@ -55,13 +54,73 @@ public class MapScript : MonoBehaviour
         sights = new List<GameObject>();
         poiFileLines = new List<string>();
 
+
         //TODO:
+
+    }
+    // Start is called before the first frame update
+    void Start()
+    {
+        gpsScript.GpsUpdatedSetMap += OnGpsUpdated;
+    }
+    public void OnGpsUpdated(double lat, double lon, float acc)
+    {
+        // this will only ever happen once
+        if (!isMapToppingsIntialized)
+        {
+            // initialize the LAT+LON+ALT of the map to be from the first poi
+
+            mapcenterLat = lat;
+            mapcenterLon = lon;
+
+            createMapToppings();
+
+            InvokeRepeating("SetRearrangingSightsActive", 0, 2);
+            isMapToppingsIntialized = true;
+        }
+        // calculate the x-z of the sample
+        Vector3 samplePosition;
+
+        double z = GeoToMetersConverter.convertLatDiffToMeters(mapcenterLat - lat);
+        double x = GeoToMetersConverter.convertLonDiffToMeters(mapcenterLon - lon, mapcenterLat);
+        samplePosition = new Vector3(-(float)x, 0, -(float)z);
+        // calculate the y of the sample
+
+        // create the sample 3D text
+        GameObject sample = Instantiate(gpsSamplePrefab, Vector3.zero, Quaternion.identity, transform);
+        sample.transform.localPosition = samplePosition;
+        // this is redundant i don't use the acc anymore, it's not accurate itself
+        //foreach(TextMeshPro tmp in sample.GetComponentsInChildren<TextMeshPro>())
+        //{
+        //    tmp.text = acc.ToString("0.0");
+        //}
+        _samples.Add(sample);
+
+
+    }
+    private void createMapToppings()
+    {
         createPois();
+
+        // poisitioning the pois can be done only after the map center has been determind (lat lon alt)
+        positionPois();
         //2) read all lines from waterburi file
         createWaterBuries();
 
         //3) create sights
         createSights();
+
+        // connect all pois to a route\path
+        createPoiConnectors();// this can't be called on Awake because the connectors depend on the result calculation of the position of every poi on its Start function
+
+    }
+
+    private void positionPois()
+    {
+        foreach(GameObject go in pois)
+        {
+            go.GetComponent<PoiScript>().positionPoiInMap();
+        }
     }
 
     public void createPois()
@@ -69,6 +128,9 @@ public class MapScript : MonoBehaviour
         //1) read all lines from poi file
         StreamReader reader = new StreamReader(Application.persistentDataPath + "/pois.txt");
         string line;
+
+        float minDistFromCenter = 999999999;
+        Vector2 center = new Vector2((float)mapcenterLat, (float)mapcenterLon);
         while ((line = reader.ReadLine()) != null)
         {
             poiFileLines.Add(line);
@@ -85,16 +147,17 @@ public class MapScript : MonoBehaviour
             float coorLat = float.Parse(latlon[0]);
             float coorLon = float.Parse(latlon[1]);
             poiScript.setCoordinates(new List<Tuple<double, double>> { new Tuple<double, double>(coorLat, coorLon) });
-            pois.Add(go);
-            // initialize the LAT+LON+ALT of the map to be from the first poi
-            if (initCenter == false)
+
+            // this will determine the height of map center to be the same height as the closest coordinate to map center
+            float currDistToCenter = Vector2.Distance(center, new Vector2(coorLat, coorLon));
+            if(currDistToCenter < minDistFromCenter)
             {
-                mapcenterLat = float.Parse(elements[1].Split(',')[0]);
-                mapcenterLon = float.Parse(elements[1].Split(',')[1]);
-                MapCenterAlt = float.Parse(elements[elements.Length - 1]);
-                initCenter = true;
+                mapCenterAlt = poiScript.centerAlt;
+                minDistFromCenter = currDistToCenter;
             }
-            poiScript.positionPoiInMap();
+
+            pois.Add(go);
+           
 
         }
         reader.Close();
@@ -114,13 +177,16 @@ public class MapScript : MonoBehaviour
 
             // set the altitude of the poi
             SightScript sightScript = go.GetComponent<SightScript>();
-            sightScript.Name = elements[0].Replace('_',' ');
+            sightScript.Name = elements[0].Replace('_', ' ');
             sightScript.Lat = float.Parse(elements[1]);
             sightScript.Lon = float.Parse(elements[2]);
             sightScript.Alt = float.Parse(elements[3]);
             sightScript.arCam = arCam;
             go.GetComponent<TMP_Text>().text = elements[0].Replace('_', ' ');
 
+            // position the sight on the map
+            sightScript.setSightOnMap();
+            sightScript.isPositioned = true;
             // add to list of sights/signs
             sights.Add(go);
 
@@ -147,6 +213,9 @@ public class MapScript : MonoBehaviour
             waterBuryScript.lat = float.Parse(elements[0]);
             waterBuryScript.lon = float.Parse(elements[1]);
             waterBuryScript.alt = float.Parse(elements[2]);
+            // position the water bury in map
+            waterBuryScript.positionWaterBuryInMap();
+            waterBuryScript.isPositioned = true;
             waterBuries.Add(go);
 
         }
@@ -154,23 +223,8 @@ public class MapScript : MonoBehaviour
     }
 
 
-    // Start is called before the first frame update
-    void Start()
-    {
-        // connect all pois to a route\path
-        createPoiConnectors();// this can't be called on Awake because the connectors depend on the result calculation of the position of every poi on its Start function
 
-        InvokeRepeating("SetRearrangingSightsActive", 0, 2);
-
-        gpsScript.GpsUpdatedSetMap += OnGpsUpdated;
-    }
-    // this function induce the signs to be rearrange
-    private void SetRearrangingSightsActive()
-    {
-        sights.Sort(new CompareSightDist());
-        indexSight = 0;
-        activlyRearrangingSights = true;
-    }
+    
 
     // this method is for create the route the hiker is following
     private void createPoiConnectors()
@@ -178,7 +232,7 @@ public class MapScript : MonoBehaviour
         // assuming the pois are in their order of walking 
         for (int i = 0; i < pois.Count - 1; i++)
         {
-            
+
             GameObject goTop = Instantiate(poiConnectorPrefab, Vector3.zero, Quaternion.identity, transform);
             // position the connectors
             PoiConnectorScript poiConnectorScript = goTop.GetComponent<PoiConnectorScript>();
@@ -189,73 +243,38 @@ public class MapScript : MonoBehaviour
 
         }
     }
+
+    // this function induce the signs to be rearrange so they won't hide each other
+    private void SetRearrangingSightsActive()
+    {
+        sights.Sort(new CompareSightDist());
+        indexSight = 0;
+        activlyRearrangingSights = true;
+    }
     private void Update()
     {
-        setMapHeight();
+        // if the topping hasn't been set yet than don't do anything
+        if (isMapToppingsIntialized)
+        {
+            // at the begining the map doesn't know its height, so we estimate from the 2 closest points,
+            // this should be stopped when a collider is hit, cause than the height is known (colliders are at a known height)
+            if (!isHeightLocked)
+                evaluateTemporaryInitialMapHeight();
 
-        // move each sight on different frame,
-        // so that the affects on one sight can be taken into account in the second sight
-        if (activlyRearrangingSights && indexSight < sights.Count)
-            sights[indexSight++].GetComponent<SightScript>().Reheight();
-        else
-            activlyRearrangingSights = false;
+            // this is called every couple of seconds
+            // move each sight on different frame,
+            // so that the affects on one sight can be taken into account in the second sight
+            // this call is making the sign to not hide each other
+            if (activlyRearrangingSights && indexSight < sights.Count)
+                sights[indexSight++].GetComponent<SightScript>().Reheight();
+            else
+                activlyRearrangingSights = false;
+        }
     }
 
-
-    public void OnGpsUpdated(double lat, double lon, float acc)
+    public void evaluateTemporaryInitialMapHeight()
     {
-
-        // calculate the x-z of the sample
-        Vector3 samplePosition;
-
-
-        double z = GeoToMetersConverter.convertLatDiffToMeters(mapcenterLat - lat);
-        double x = GeoToMetersConverter.convertLonDiffToMeters(mapcenterLon - lon , mapcenterLat);
-        samplePosition = new Vector3(-(float)x, 0, -(float)z);
-        // calculate the y of the sample
-        
-        // create the sample 3D text
-        GameObject sample = Instantiate(gpsSamplePrefab, Vector3.zero, Quaternion.identity, transform);
-        sample.transform.localPosition = samplePosition;
-        foreach(TextMeshPro tmp in sample.GetComponentsInChildren<TextMeshPro>())
-        {
-            tmp.text = acc.ToString("0.0");
-        }
-        //sample.GetComponentsInChildren<TextMeshPro>()[0].text = acc.ToString("0.0");
-        //sample.GetComponentsInChildren<TextMeshPro>()[1].text = acc.ToString("0.0");
-        _samples.Add(sample);
-
-
-    }
-
-    public float getMapSamplesAvgX()
-    {
-        float sumX = 0;
-        float avgX = 0;
-        
-        foreach (GameObject go in mapSamples)
-        {
-            sumX += go.transform.position.x;
-        }
-
-        avgX = sumX / mapSamples.Count;
-        return avgX;
-    }    
-    
-    public float getMapSamplesAvgZ()
-    {
-        float sumZ = 0;
-        float avgZ = 0;
-        foreach(GameObject go in mapSamples)
-        {
-            sumZ += go.transform.position.z;
-        }
-        avgZ = sumZ / mapSamples.Count;
-        return avgZ;
-    }
-    public void setMapHeight()
-    {
-        if (heightInitialEstimation&& gpsScript.sampleCountForInitialMapPosition > 3)
+        if (gpsScript.sampleCountForInitialMapPosition > 3)
         {
             // loop on all pois find 2 closest
             GameObject minGo1 = pois[0];
@@ -293,15 +312,14 @@ public class MapScript : MonoBehaviour
             }
         }
     }
-
     // this is called when the user (holding the phone and camera) is above the poi
     public void OnCamTriggeredPoiEnter(Collider turn)
     {
         // this will invoke the dependency of the height map from the y value of the camera
         // after this line the height of the map will be lock to the height of the first
-        if (gpsScript.sampleCountForInitialMapPosition > 3)// this should only occur if the map is positioned already geographcally
+        if (gpsScript.sampleCountForInitialMapPosition > 5)// this should only occur if the map is positioned already geographcally
         {
-            heightInitialEstimation = false;
+            isHeightLocked = true;
             // If i could count on the AR of the phone to give accurate y axis changes during a long period of time than this next lines are redundant
             // but just to make sure the height of the map is correct i will run this code every time the user is passing a poi
             // set the height of the map to a fixed height based on the height of the poi (assuming user is walking on ground + holding the phone at 1.1m height above ground)
@@ -315,4 +333,33 @@ public class MapScript : MonoBehaviour
         }
 
     }
+
+    public float getMapSamplesAvgX()
+    {
+        float sumX = 0;
+        float avgX = 0;
+        
+        foreach (GameObject go in mapSamples)
+        {
+            sumX += go.transform.position.x;
+        }
+
+        avgX = sumX / mapSamples.Count;
+        return avgX;
+    }    
+    
+    public float getMapSamplesAvgZ()
+    {
+        float sumZ = 0;
+        float avgZ = 0;
+        foreach(GameObject go in mapSamples)
+        {
+            sumZ += go.transform.position.z;
+        }
+        avgZ = sumZ / mapSamples.Count;
+        return avgZ;
+    }
+    
+
+    
 }
