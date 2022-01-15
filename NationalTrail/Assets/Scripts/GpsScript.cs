@@ -13,7 +13,7 @@ public class GpsScript : MonoBehaviour
     public Camera arCam;
     private string TAG = "GpsScript";
     private double prevTimeStamp;
-    private int _skipSamples = 10;
+    private int _skipSamples = 3;
     private float _avgLat;
     private float _avgLon;
     private bool _gpsOn;
@@ -34,7 +34,7 @@ public class GpsScript : MonoBehaviour
     private float inHorizontalAcc;
     private double inAlt;
     private float inAltAcc;
-
+    private bool dummy = true;
 
     private void Awake()
     {
@@ -57,19 +57,19 @@ public class GpsScript : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-
+        if (dummy)
+        {
+            //emulateGPS();
+            dummy = false;
+        }
         text.text = _skipSamples.ToString();
         unityGPS();
     }
 
-   
-
     private void unityGPS()
     {
-
         if (Input.location.status == LocationServiceStatus.Running && Input.location.lastData.timestamp > prevTimeStamp && _gpsOn && Input.location.lastData.horizontalAccuracy < 8.0f)
         {
-
             inLat = Input.location.lastData.latitude;
             inLon = Input.location.lastData.longitude;
             inHorizontalAcc = Input.location.lastData.horizontalAccuracy;
@@ -85,8 +85,13 @@ public class GpsScript : MonoBehaviour
                 _sampleCountForInitialMapPosition++;
                 OnGpsUpdated();
             }
-            
         }
+    }
+
+    public void emulateGPS()
+    {
+        GpsUpdatedSetMap(31.262635, 34.793368, 3);
+        GpsUpdatedCalcLeastSquares();
     }
 
     public void OnGpsUpdated()
@@ -94,11 +99,9 @@ public class GpsScript : MonoBehaviour
         GpsUpdatedSetMap(inLat, inLon, inHorizontalAcc);
         GpsUpdatedCalcLeastSquares();
     }
-  
 
     public void switchGPS(bool val)
     {
         gpsOn = val;
     }
-   
 }

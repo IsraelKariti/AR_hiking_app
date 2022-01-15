@@ -33,13 +33,14 @@ public class SightScript : MonoBehaviour
         positionSightOnMap();
         beautifySightText();
     }
+
     private void positionSightOnMap()
     {
-        MapScript mapScript = transform.parent.GetComponent<MapScript>();
+        MapToppingsScript mapToppingsScript = transform.parent.GetComponent<MapToppingsScript>();
         // calcula the position of the center of the poi
-        double zMeters = GeoToMetersConverter.convertLatDiffToMeters(mapScript.MapCenterLat - Lat);
-        double xMeters = GeoToMetersConverter.convertLonDiffToMeters(mapScript.MapCenterLon - Lon, mapScript.MapCenterLat);
-        double yMeters = Alt - mapScript.MapCenterAlt;
+        double zMeters = GeoToMetersConverter.convertLatDiffToMeters(mapToppingsScript.MapCenterLat - Lat);
+        double xMeters = GeoToMetersConverter.convertLonDiffToMeters(mapToppingsScript.MapCenterLon - Lon, mapToppingsScript.MapCenterLat);
+        double yMeters = Alt - mapToppingsScript.MapCenterAlt;
         // position the sight in the map
         transform.localPosition = new Vector3(-(float)xMeters, (float)yMeters, -(float)zMeters);
     }

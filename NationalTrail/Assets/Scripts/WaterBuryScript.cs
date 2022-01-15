@@ -16,11 +16,11 @@ public class WaterBuryScript : MonoBehaviour
 
     public void positionWaterBuryInMap()
     {
-        MapScript mapScript = transform.parent.GetComponent<MapScript>();
+        MapToppingsScript mapToppingsScript = transform.parent.GetComponent<MapToppingsScript>();
         // calcula the position of the center of the poi
-        double zMeters = GeoToMetersConverter.convertLatDiffToMeters(mapScript.MapCenterLat - lat);
-        double xMeters = GeoToMetersConverter.convertLonDiffToMeters(mapScript.MapCenterLon - lon, mapScript.MapCenterLat);
-        double yMeters = alt - mapScript.MapCenterAlt;
+        double zMeters = GeoToMetersConverter.convertLatDiffToMeters(mapToppingsScript.MapCenterLat - lat);
+        double xMeters = GeoToMetersConverter.convertLonDiffToMeters(mapToppingsScript.MapCenterLon - lon, mapToppingsScript.MapCenterLat);
+        double yMeters = alt - mapToppingsScript.MapCenterAlt;
         // position the water bury in the map
         transform.localPosition = new Vector3(-(float)xMeters, (float)yMeters, -(float)zMeters);
     }

@@ -131,12 +131,12 @@ public class PoiScript : MonoBehaviour
 
     public void positionPoiInMap()
     {
-        MapScript mapScript = transform.parent.GetComponent<MapScript>();
+        MapToppingsScript mapToppingsScript = transform.parent.GetComponent<MapToppingsScript>();
 
         // calcula the position of the center of the poi
-        double zMeters = GeoToMetersConverter.convertLatDiffToMeters(mapScript.MapCenterLat - _centerLat);
-        double xMeters = GeoToMetersConverter.convertLonDiffToMeters(mapScript.MapCenterLon - _centerLon, mapScript.MapCenterLat);
-        float yMeters = _centerAlt - mapScript.MapCenterAlt;
+        double zMeters = GeoToMetersConverter.convertLatDiffToMeters(mapToppingsScript.MapCenterLat - _centerLat);
+        double xMeters = GeoToMetersConverter.convertLonDiffToMeters(mapToppingsScript.MapCenterLon - _centerLon, mapToppingsScript.MapCenterLat);
+        float yMeters = _centerAlt - mapToppingsScript.MapCenterAlt;
         // in this area of the world the positive z axis is opposite direction of the north heading
         // so we add the minus sign to z
         gameObject.transform.localPosition = new Vector3(-(float)xMeters, yMeters, -(float)zMeters);
