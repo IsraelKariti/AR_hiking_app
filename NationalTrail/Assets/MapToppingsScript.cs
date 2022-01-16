@@ -334,6 +334,22 @@ public class MapToppingsScript : MonoBehaviour
     // this is called when the user (holding the phone and camera) is above the poi
     public void OnCamTriggeredPoiEnter(Collider turn)
     {
+        // if the toppings are aligned with the actual physical trail than the pois are located on the actual physical coords
+        if (isHorizontalLocked)
+        {
+            // If i could count on the AR of the phone to give accurate y axis changes during a long period of time than this next lines are redundant
+            // but just to make sure the height of the map is correct i will run this code every time the user is passing a poi
+            // set the height of the map to a fixed height based on the height of the poi (assuming user is walking on ground + holding the phone at 1.1m height above ground)
+            float poiLocalYInMap = turn.transform.parent.localPosition.y;
+            float camHeightInAR = arCam.transform.position.y;
+            float userFeetHeightInAR = camHeightInAR - 1.1f;
+            //how much to lift the map:
+            float liftTheMap = userFeetHeightInAR - poiLocalYInMap;
+            // change map height
+            transform.position = new Vector3(transform.position.x, liftTheMap, transform.position.z);
+            isHeightLocked = true;
+        }
+        //}
         // this will invoke the dependency of the height map from the y value of the camera
         // after this line the height of the map will be lock to the height of the first
         //if (gpsScript.sampleCountForInitialMapPosition > 5)// this should only occur if the map is positioned already geographcally
