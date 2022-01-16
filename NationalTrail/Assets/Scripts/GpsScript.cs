@@ -34,8 +34,7 @@ public class GpsScript : MonoBehaviour
     private float inHorizontalAcc;
     private double inAlt;
     private float inAltAcc;
-    private bool dummy = true;
-
+    private float emuLon = 34f;
     private void Awake()
     {
         if (!Input.location.isEnabledByUser) //FIRST IM CHACKING FOR PERMISSION IF "true" IT MEANS USER GAVED PERMISSION FOR USING LOCATION INFORMATION
@@ -57,11 +56,7 @@ public class GpsScript : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (dummy)
-        {
-            //emulateGPS();
-            dummy = false;
-        }
+       
         text.text = _skipSamples.ToString();
         unityGPS();
     }
@@ -88,17 +83,19 @@ public class GpsScript : MonoBehaviour
         }
     }
 
-    public void emulateGPS()
-    {
-        GpsUpdatedSetMap(31.262635, 34.793368, 3);
-        GpsUpdatedCalcLeastSquares();
-    }
-
     public void OnGpsUpdated()
     {
         GpsUpdatedSetMap(inLat, inLon, inHorizontalAcc);
         GpsUpdatedCalcLeastSquares();
     }
+
+    //public void EmulateGPS()
+    //{
+    //    _sampleCountForInitialMapPosition++;
+    //    GpsUpdatedSetMap(31f, emuLon, 3);
+    //    GpsUpdatedCalcLeastSquares();
+    //    emuLon -= 0.0001f;
+    //}
 
     public void switchGPS(bool val)
     {

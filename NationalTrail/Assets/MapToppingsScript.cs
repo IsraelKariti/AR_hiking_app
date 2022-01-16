@@ -16,6 +16,8 @@ public class MapToppingsScript : MonoBehaviour
     public double MapCenterLat { get { return mapcenterLat; } set { mapcenterLat = value; } }
     public double MapCenterLon { get { return mapcenterLon; } set { mapcenterLon = value; } }
     public float MapCenterAlt { get => mapCenterAlt; set => mapCenterAlt = value; }
+    public bool IsHorizontalLocked { get => isHorizontalLocked; set => isHorizontalLocked = value; }
+
     private double mapcenterLat;
     private double mapcenterLon;
     private float mapCenterAlt;
@@ -27,13 +29,15 @@ public class MapToppingsScript : MonoBehaviour
     private List<GameObject> sights;
 
     private bool isHeightLocked = false;
-
+    private bool isHorizontalLocked = false;
     private int indexSight = 0;
     private bool activlyRearrangingSights = false;
     private bool isMapToppingsIntialized = false;
 
     private void Awake()
     {
+        File.Delete(Application.persistentDataPath + "/walkedParallel.txt");
+
         File.Delete(Application.persistentDataPath + "/toppingsLog.txt");
         File.AppendAllText(Application.persistentDataPath + "/toppingsLog.txt", "awake");
         File.AppendAllText(Application.persistentDataPath + "/toppingsLog.txt", "isMapToppingsIntialized: " + isMapToppingsIntialized + "\n");
@@ -128,9 +132,9 @@ public class MapToppingsScript : MonoBehaviour
 
             pois.Add(go);
             File.AppendAllText(Application.persistentDataPath + "/toppingsLog.txt", "poi pos: "+go.transform.position+"\n");
-
-
         }
+        // after i have set the toppings center alt i do the same for the parent map
+        transform.parent.gameObject.GetComponent<MapScript>().MapCenterAlt = mapCenterAlt;
         reader.Close();
     }
 
@@ -255,7 +259,7 @@ public class MapToppingsScript : MonoBehaviour
 
     public void evaluateTemporaryInitialMapHeight()
     {
-        if (gpsScript.sampleCountForInitialMapPosition > 3)
+        if (gpsScript.sampleCountForInitialMapPosition > 1)
         {
             // loop on all pois find 2 closest
             GameObject minGo1 = pois[0];
@@ -293,6 +297,40 @@ public class MapToppingsScript : MonoBehaviour
             }
         }
     }
+    // this function is suppose to replace the initial fluctuating height of the map that is constantly changeing every update call
+    // this will occur when the user has walked parallel to a connector and this will determine the shift (+-3meters)
+    // and after the shift has been determined than it will be time to enable the height locking with the poi collider
+    // this function can't determine the height as this path is 1 meters away from the poi, so the height is not determined as good as in the poi
+    public void OnUserWalkedParallelToConnector(Vector2 shift)
+    {
+        File.AppendAllText(Application.persistentDataPath + "/walkedParallel.txt", "parallel\n");
+
+        if (gpsScript.sampleCountForInitialMapPosition > 0)// this should only occur if the map is positioned already geographcally
+        {
+            File.AppendAllText(Application.persistentDataPath + "/walkedParallel.txt", "gps is more than 5\n");
+
+            //since the toppings can only move in a radius of 3 meters from the gps induced map
+            // we have to make sure that the toppings will be in this bound
+            Vector3 localToppingsPos = transform.localPosition;
+            File.AppendAllText(Application.persistentDataPath + "/walkedParallel.txt", "localToppingsPos"+ localToppingsPos+"\n");
+
+            Vector3 shiftXYZ = new Vector3(shift.x, 0, shift.y);
+            File.AppendAllText(Application.persistentDataPath + "/walkedParallel.txt", "shiftXYZ" + shiftXYZ + "\n");
+            Vector3 designatedLocalToppingsPosition = localToppingsPos + shiftXYZ;
+            File.AppendAllText(Application.persistentDataPath + "/walkedParallel.txt", "designatedLocalToppingsPosition" + designatedLocalToppingsPosition + "\n");
+
+            if (designatedLocalToppingsPosition.sqrMagnitude < Values.GPS_ERROR_RADIUS_SQRD)
+            {
+                // move the map toppings with respect to the base map
+                File.AppendAllText(Application.persistentDataPath + "/walkedParallel.txt", "designatedLocalToppingsPosition.sqrMagnitude" + designatedLocalToppingsPosition.sqrMagnitude + "\n");
+
+                transform.localPosition += shiftXYZ;// the shift is 2 dimension XZ, so the y value of the vector is the z global axis
+
+                // this will cancel the initial dynamic valuation of height
+                IsHorizontalLocked = true;
+            }
+        }
+    }
     // this is called when the user (holding the phone and camera) is above the poi
     public void OnCamTriggeredPoiEnter(Collider turn)
     {
@@ -314,12 +352,6 @@ public class MapToppingsScript : MonoBehaviour
         //}
 
     }
-    //public void OnUserWalkedParallelToConnector()
-    //{
-    //    if (gpsScript.sampleCountForInitialMapPosition > 5)// this should only occur if the map is positioned already geographcally
-    //    {
-    //        isHeightLocked = true;
 
-    //    }
-    //}
+    
 }

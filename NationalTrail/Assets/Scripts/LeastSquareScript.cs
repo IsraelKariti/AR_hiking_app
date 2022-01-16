@@ -10,6 +10,7 @@ using System.IO;
 public class LeastSquareScript : MonoBehaviour
 {
     public GameObject map;
+    public GameObject mapToppings;
     public MapScript mapScript;
     public GroundScript groundScript;
     public GpsScript gpsScript;
@@ -26,6 +27,8 @@ public class LeastSquareScript : MonoBehaviour
     private Vector3 axVector3;
     private float prevAngle;
     //private bool _axOn;
+    private Vector3 mapToppingsPrevGlobalPosition;
+    private Quaternion mapToppingsPrevGlobalRotation;
     private void Start()
     {
         mapSamples = mapScript.mapSamples;
@@ -33,12 +36,24 @@ public class LeastSquareScript : MonoBehaviour
         gpsScript.GpsUpdatedCalcLeastSquares += OnGpsUpdated;
     }
 
-    
-
     public void OnGpsUpdated()
     {
         Debug.Log(TAG + "LeastSquareScript OnGpsUpdated start");
-        
+
+        // before we start moving the map we need to make sure that if the map toppings is horizontally locked it will not change the toppings global position
+        File.AppendAllText(Application.persistentDataPath + "/gpsForShift.txt", "OnGpsUpdated\n");
+
+        bool isMapToppingsHorizontallyLocked = mapToppings.GetComponent<MapToppingsScript>().IsHorizontalLocked;
+        File.AppendAllText(Application.persistentDataPath + "/gpsForShift.txt", "isMapToppingsHorizontallyLocked" + isMapToppingsHorizontallyLocked+ "\n");
+
+        if (isMapToppingsHorizontallyLocked)
+        {
+            mapToppingsPrevGlobalPosition = mapToppings.transform.position;
+            File.AppendAllText(Application.persistentDataPath + "/gpsForShift.txt", "mapToppingsPrevGlobalPosition" + mapToppingsPrevGlobalPosition + "\n");
+            mapToppingsPrevGlobalRotation = mapToppings.transform.rotation;
+            File.AppendAllText(Application.persistentDataPath + "/gpsForShift.txt", "mapToppingsPrevGlobalRotation" + mapToppingsPrevGlobalRotation + "\n");
+
+        }
 
         //STEP 1: rotate around y
         findBestRotation();
@@ -47,8 +62,28 @@ public class LeastSquareScript : MonoBehaviour
         findeBestPosition();
         Debug.Log(TAG + "LeastSquareScript OnGpsUpdated end a");
 
+        // after the map is repositioned check if the toppings are in in horizontal lock
+        if (isMapToppingsHorizontallyLocked)
+        {
+            File.AppendAllText(Application.persistentDataPath + "/gpsForShift.txt", "isMapToppingsHorizontallyLocked: " + isMapToppingsHorizontallyLocked + "\n");
 
+            // if the toppings position BEFORE the move are still in the gps error radius
+            if (Vector3.Distance(map.transform.position, mapToppingsPrevGlobalPosition) < Values.GPS_ERROR_RADIUS)
+            {
+                File.AppendAllText(Application.persistentDataPath + "/gpsForShift.txt", "still in bounds: " + "\n");
 
+                // restore the map toppings to be at the previous position and rotation 
+                mapToppings.transform.position = mapToppingsPrevGlobalPosition;
+                mapToppings.transform.rotation = mapToppingsPrevGlobalRotation;
+            }
+            else// if the map has moved too far from the toppings physical\global position than reset the toppings to the center of the map
+            {
+                File.AppendAllText(Application.persistentDataPath + "/gpsForShift.txt", "out of bounds: " + "\n");
+                mapToppings.transform.localPosition = Vector3.zero;
+                mapToppings.transform.localRotation = Quaternion.identity;
+                mapToppings.GetComponent<MapToppingsScript>().IsHorizontalLocked = false;
+            }
+        }
     }
 
     public void findBestRotation()
@@ -127,16 +162,23 @@ public class LeastSquareScript : MonoBehaviour
         float totalX = 0;
         float avg = 0;
         int limit = 0;
-
+        File.AppendAllText(Application.persistentDataPath + "/AvgX.txt", "find best x:" + "\n");
         if (mapSamples.Count > 0 && groundSamples.Count >0)
         {
             limit = mapSamples.Count > groundSamples.Count ? groundSamples.Count : mapSamples.Count;
+            File.AppendAllText(Application.persistentDataPath + "/AvgX.txt", "limit:" +limit+ "\n");
+
             for (int i = 0; i < limit; i++)
             {
+                File.AppendAllText(Application.persistentDataPath + "/AvgX.txt", "groundSamples[i].transform.position.x - mapSamples[i].transform.position.x:" + groundSamples[i].transform.position.x +"-"+ mapSamples[i].transform.position.x + "\n");
+
                 totalX += (groundSamples[i].transform.position.x - mapSamples[i].transform.position.x);
 
             }
+            File.AppendAllText(Application.persistentDataPath + "/AvgX.txt", "totalX:" + totalX + "\n");
+
             avg = totalX / limit;
+            File.AppendAllText(Application.persistentDataPath + "/AvgX.txt", "avg:" + avg + "\n");
 
         }
         return avg;

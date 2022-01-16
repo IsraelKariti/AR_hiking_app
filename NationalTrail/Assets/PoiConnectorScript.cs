@@ -20,7 +20,7 @@ public class PoiConnectorScript : MonoBehaviour
 
         float poiDist = Vector3.Distance(go1.transform.localPosition, go2.transform.localPosition);
         GetComponentInChildren<SpriteRenderer>().size = new Vector2(1, poiDist);
-        GetComponentInChildren<BoxCollider>().size = new Vector3(2, poiDist-2, 2);
+        GetComponent<BoxCollider>().size = new Vector3(10, poiDist-2, 10);
 
         // calculate angle of rotation arount x
         // 1) calc dist on x z plane
