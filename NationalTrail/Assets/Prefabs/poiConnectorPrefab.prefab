@@ -68,6 +68,7 @@ GameObject:
   m_Component:
   - component: {fileID: 5459109858691613074}
   - component: {fileID: 2915491761457044308}
+  - component: {fileID: 7586632282911810530}
   m_Layer: 0
   m_Name: Arrow
   m_TagString: poiConnector
@@ -140,3 +141,16 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
+--- !u!114 &7586632282911810530
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8979959129737810276}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9513c2d8af4fd094cb02178f44b0931e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  baseMaterial: {fileID: 2100000, guid: 978e5535d41def04598b31f790e5917a, type: 2}

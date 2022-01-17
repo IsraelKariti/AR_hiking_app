@@ -13,7 +13,7 @@ public class GpsScript : MonoBehaviour
     public Camera arCam;
     private string TAG = "GpsScript";
     private double prevTimeStamp;
-    private int _skipSamples = 3;
+    private int _skipSamples = Values.SKIP_SAMPLES;
     private float _avgLat;
     private float _avgLon;
     private bool _gpsOn;
@@ -59,6 +59,7 @@ public class GpsScript : MonoBehaviour
        
         text.text = _skipSamples.ToString();
         unityGPS();
+        //EmulateGPS();
     }
 
     private void unityGPS()
@@ -89,13 +90,13 @@ public class GpsScript : MonoBehaviour
         GpsUpdatedCalcLeastSquares();
     }
 
-    //public void EmulateGPS()
-    //{
-    //    _sampleCountForInitialMapPosition++;
-    //    GpsUpdatedSetMap(31f, emuLon, 3);
-    //    GpsUpdatedCalcLeastSquares();
-    //    emuLon -= 0.0001f;
-    //}
+    public void EmulateGPS()
+    {
+        _sampleCountForInitialMapPosition++;
+        GpsUpdatedSetMap(31f, emuLon, 3);
+        GpsUpdatedCalcLeastSquares();
+        emuLon -= 0.0001f;
+    }
 
     public void switchGPS(bool val)
     {

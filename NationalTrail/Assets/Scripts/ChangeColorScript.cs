@@ -1,7 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-
+using System.IO;
 public class ChangeColorScript : MonoBehaviour
 {
     public Material mat;
@@ -19,10 +19,14 @@ public class ChangeColorScript : MonoBehaviour
     // i only want to change the color and NOT the entire material because i don't want to loose the sprite (arrow)
     public void changeMatColor()
     {
+        File.AppendAllText(Application.persistentDataPath + "/color.txt", "changeMatColor"+"\n");
         colorIndex++;
 
         Color temp = colors[colorIndex%colors.Length];
+        File.AppendAllText(Application.persistentDataPath + "/color.txt", "temp: " +temp.ToString()+ "\n");
 
         mat.SetColor("_Color", new Color(temp.r,temp.g,temp.b, alpha));
+        File.AppendAllText(Application.persistentDataPath + "/color.txt", "mat changed "  + "\n");
+
     }
 }

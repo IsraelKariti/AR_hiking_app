@@ -7,9 +7,13 @@ using System.IO;
 public class PoiConnectorScript : MonoBehaviour
 {
     private Camera arCam;
-    
-    public Camera ArCam { get => arCam; set => arCam = value; }
+    private bool isPositioned = false;
+    public Camera ArCam { get { return arCam; } set { arCam = value; } }
+    private void Awake()
+    {
+        File.Delete(Application.persistentDataPath + "/rotateConnector.txt");
 
+    }
     public void positionInMap(GameObject go1, GameObject go2)
     {
         // get the location of the connector between pois
@@ -35,17 +39,23 @@ public class PoiConnectorScript : MonoBehaviour
         float rotY = Mathf.Atan2(go2.transform.localPosition.x - go1.transform.localPosition.x, go2.transform.localPosition.z - go1.transform.localPosition.z) * Mathf.Rad2Deg;
 
         transform.localRotation = Quaternion.Euler(rotX, rotY, 0);
+
+        isPositioned = true;
     }
 
     private void Update()
     {
-        adjustConnectorColor();
-        adjustConnectorRotation();
+        if (isPositioned)
+        {
+            adjustConnectorColor();
+            adjustConnectorRotation();
+        }
         
     }
 
     private void adjustConnectorRotation()
     {// get the child
+        //File.AppendAllText(Application.persistentDataPath + "/rotateConnector.txt", "adjustConnectorRotation\n");
         GameObject child = transform.GetChild(0).gameObject;
         // get the world position of the camera
         Vector3 camPos = arCam.transform.position;
@@ -102,11 +112,19 @@ public class PoiConnectorScript : MonoBehaviour
         // check dist cam-connector
         float dist = Vector3.Distance(camPos, child.transform.position);
 
+        // take the base material of the game object
+        ArrowScript arrowScript = child.GetComponent<ArrowScript>();
+        Material baseMaterial = arrowScript.baseMaterial;
+        // the base color of the entire scene connectors
+        Color baseColor = baseMaterial.color;
+        // change color alpha
+        baseColor.a = 0.2f + dist / 100.0f;
+
         SpriteRenderer renderer = child.GetComponent<SpriteRenderer>();
-        Material mat = renderer.material;
-        Color c = mat.GetColor("_Color");
-        c.a = 0.2f + dist / 100.0f;
-        mat.SetColor("_Color", c);
+        // create local material
+        Material localMat = renderer.material;// PROBLEMATIC LINE - creates a local copy
+        // change the local material
+        localMat.SetColor("_Color", baseColor);
     }
 
     
