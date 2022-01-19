@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 using System.IO;
 using TMPro;
 
@@ -13,6 +14,8 @@ public class MapToppingsScript : MonoBehaviour
     public GameObject poiConnectorPrefab;
     public GameObject waterBuryPrefab;
     public GameObject sightPrefab;
+    public Text horizontalIndicationText;
+    public Text verticalIndicationText;
     public double MapCenterLat { get { return mapcenterLat; } set { mapcenterLat = value; } }
     public double MapCenterLon { get { return mapcenterLon; } set { mapcenterLon = value; } }
     public float MapCenterAlt { get => mapCenterAlt; set => mapCenterAlt = value; }
@@ -28,7 +31,7 @@ public class MapToppingsScript : MonoBehaviour
     private List<GameObject> waterBuries;
     private List<GameObject> sights;
 
-    private bool isHeightLocked = false;
+    private bool isVerticalLocked = false;
     private bool isHorizontalLocked = false;
     private int indexSight = 0;
     private bool activlyRearrangingSights = false;
@@ -37,6 +40,7 @@ public class MapToppingsScript : MonoBehaviour
     private void Awake()
     {
         File.Delete(Application.persistentDataPath + "/walkedParallel.txt");
+        File.Delete(Application.persistentDataPath + "/vertical_collision.txt");
 
         File.Delete(Application.persistentDataPath + "/toppingsLog.txt");
         File.AppendAllText(Application.persistentDataPath + "/toppingsLog.txt", "awake");
@@ -243,7 +247,7 @@ public class MapToppingsScript : MonoBehaviour
         {
             // at the begining the map doesn't know its height, so we estimate from the 2 closest points,
             // this should be stopped when a collider is hit, cause than the height is known (colliders are at a known height)
-            if (!isHeightLocked)
+            if (!isVerticalLocked)
                 evaluateTemporaryInitialMapHeight();
 
             // this is called every couple of seconds
@@ -251,9 +255,18 @@ public class MapToppingsScript : MonoBehaviour
             // so that the affects on one sight can be taken into account in the second sight
             // this call is making the sign to not hide each other
             if (activlyRearrangingSights && indexSight < sights.Count)
+            {
                 sights[indexSight++].GetComponent<SightScript>().Reheight();
+                if(indexSight == sights.Count)
+                    File.AppendAllText(Application.persistentDataPath + "/reheight.txt", "\n\n\n\n\n");
+
+            }
             else
+            {
+
                 activlyRearrangingSights = false;
+
+            }
         }
     }
 
@@ -332,7 +345,7 @@ public class MapToppingsScript : MonoBehaviour
                 // this will cancel the initial dynamic valuation of height
                 transform.localPosition += designatedLocalShiftInMapXYZ;// the shift is 2 dimension XZ, so the y value of the vector is the z global axis
                 isHorizontalLocked = true;
-
+                horizontalIndicationText.text = "H";
                 // move the map toppings with respect to the base map
                 File.AppendAllText(Application.persistentDataPath + "/walkedParallel.txt", "TOPPINGS SHIFTED!" + "\n");
                 File.AppendAllText(Application.persistentDataPath + "/walkedParallel.txt", "AFTER SHIFT toppings global pos: " + transform.position + "\n");
@@ -345,33 +358,46 @@ public class MapToppingsScript : MonoBehaviour
             {
                 transform.localPosition = Vector3.zero;
                 isHorizontalLocked = false;
+                isVerticalLocked = false;
+                horizontalIndicationText.text = "";
+                verticalIndicationText.text = "";
+
                 File.AppendAllText(Application.persistentDataPath + "/walkedParallel.txt", "TOPPINGS RESET!" + "\n");
                 File.AppendAllText(Application.persistentDataPath + "/walkedParallel.txt", "TOPPINGS RESET toppings global pos: " + transform.position + "\n");
                 File.AppendAllText(Application.persistentDataPath + "/walkedParallel.txt", "TOPPINGS RESET toppings local pos: " + transform.localPosition + "\n");
                 File.AppendAllText(Application.persistentDataPath + "/walkedParallel.txt", "TOPPINGS RESET isHorizontalLocked: " + isHorizontalLocked + "\n");
-
+                File.AppendAllText(Application.persistentDataPath + "/walkedParallel.txt", "TOPPINGS RESET isVerticalLocked: " + isVerticalLocked + "\n");
             }
         }
     }
     // this is called when the user (holding the phone and camera) is above the poi
     public void OnCamTriggeredPoiEnter(Collider turn)
     {
+        File.AppendAllText(Application.persistentDataPath + "/vertical_collision.txt", "\n\n\n\n\nentered vertical collision" + "\n");
+        File.AppendAllText(Application.persistentDataPath + "/vertical_collision.txt", "isHorizontalLocked: "+ isHorizontalLocked + "\n");
+
         // if the toppings are aligned with the actual physical trail than the pois are located on the actual physical coords
-        //if (isHorizontalLocked)
-        //{
-        //    // If i could count on the AR of the phone to give accurate y axis changes during a long period of time than this next lines are redundant
-        //    // but just to make sure the height of the map is correct i will run this code every time the user is passing a poi
-        //    // set the height of the map to a fixed height based on the height of the poi (assuming user is walking on ground + holding the phone at 1.1m height above ground)
-        //    float poiLocalYInMap = turn.transform.parent.localPosition.y;
-        //    float camHeightInAR = arCam.transform.position.y;
-        //    float userFeetHeightInAR = camHeightInAR - 1.1f;
-        //    //how much to lift the map:
-        //    float liftTheMap = userFeetHeightInAR - poiLocalYInMap;
-        //    // change map height
-        //    transform.position = new Vector3(transform.position.x, liftTheMap, transform.position.z);
-        //    isHeightLocked = true;
-        //}
-        //}
+        if (isHorizontalLocked)
+        {
+            // If i could count on the AR of the phone to give accurate y axis changes during a long period of time than this next lines are redundant
+            // but just to make sure the height of the map is correct i will run this code every time the user is passing a poi
+            // set the height of the map to a fixed height based on the height of the poi (assuming user is walking on ground + holding the phone at 1.1m height above ground)
+            float poiLocalYInMap = turn.transform.parent.localPosition.y;
+            File.AppendAllText(Application.persistentDataPath + "/vertical_collision.txt", "poiLocalYInMap: " + poiLocalYInMap + "\n");
+            float camHeightInAR = arCam.transform.position.y;
+            File.AppendAllText(Application.persistentDataPath + "/vertical_collision.txt", "camHeightInAR: " + camHeightInAR + "\n");
+            float userFeetHeightInAR = camHeightInAR - 1.1f;
+            File.AppendAllText(Application.persistentDataPath + "/vertical_collision.txt", "userFeetHeightInAR: " + userFeetHeightInAR + "\n");
+            //how much to lift the map:
+            float liftTheMap = userFeetHeightInAR - poiLocalYInMap;
+            File.AppendAllText(Application.persistentDataPath + "/vertical_collision.txt", "liftTheMap: " + liftTheMap + "\n");
+            // change map height
+            transform.position = new Vector3(transform.position.x, liftTheMap, transform.position.z);
+            isVerticalLocked = true;
+            File.AppendAllText(Application.persistentDataPath + "/vertical_collision.txt", "isVerticalLocked: " + isVerticalLocked + "\n");
+            verticalIndicationText.text = "V";
+
+        }
 
         // this will invoke the dependency of the height map from the y value of the camera
         // after this line the height of the map will be lock to the height of the first

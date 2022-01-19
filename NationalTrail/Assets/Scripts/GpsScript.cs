@@ -10,6 +10,7 @@ using UnityEngine.Android;
 public class GpsScript : MonoBehaviour
 {
     public Text text;
+    public Text shiftEnabledIndicator;
     public Camera arCam;
     private string TAG = "GpsScript";
     private double prevTimeStamp;
@@ -82,6 +83,14 @@ public class GpsScript : MonoBehaviour
             else
             {
                 _sampleCountForInitialMapPosition++;
+                if(_sampleCountForInitialMapPosition == Values.MIN_GPS_SAMPLES_FOR_TOPPINGS_SHIFT)
+                {
+                    shiftEnabledIndicator.text = "Y";
+                }
+                if(_sampleCountForInitialMapPosition < Values.MIN_GPS_SAMPLES_FOR_TOPPINGS_SHIFT)
+                {
+                    shiftEnabledIndicator.text = ""+_sampleCountForInitialMapPosition;
+                }
                 OnGpsUpdated();
             }
         }
@@ -94,13 +103,13 @@ public class GpsScript : MonoBehaviour
         GpsUpdatedCalcLeastSquares();
     }
 
-    public void EmulateGPS()
-    {
-        _sampleCountForInitialMapPosition++;
-        GpsUpdatedSetMap(31f, emuLon, 3);
-        GpsUpdatedCalcLeastSquares();
-        emuLon -= 0.0001f;
-    }
+    //public void EmulateGPS()
+    //{
+    //    _sampleCountForInitialMapPosition++;
+    //    GpsUpdatedSetMap(31f, emuLon, 3);
+    //    GpsUpdatedCalcLeastSquares();
+    //    emuLon -= 0.0001f;
+    //}
 
     public void switchGPS(bool val)
     {

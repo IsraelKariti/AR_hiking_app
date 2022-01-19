@@ -27,8 +27,8 @@ public class LeastSquareScript : MonoBehaviour
     private Vector3 axVector3;
     private float prevAngle;
     //private bool _axOn;
-    private Vector3 mapToppingsGlobalPositionBeforeLS;
-    private Vector3 mapToppingsGlobalRotationBeforeLS;
+    private Vector3 mapToppingsGlobalPosition;
+    private Vector3 mapToppingsGlobalRotation;
     private void Start()
     {
         mapSamples = mapScript.mapSamples;
@@ -50,21 +50,21 @@ public class LeastSquareScript : MonoBehaviour
 
         bool isMapToppingsHorizontallyLocked = mapToppings.GetComponent<MapToppingsScript>().IsHorizontalLocked;
         //File.AppendAllText(Application.persistentDataPath + "/gpsForShift.txt", "isMapToppingsHorizontallyLocked" + isMapToppingsHorizontallyLocked+ "\n");
-        File.AppendAllText(Application.persistentDataPath + "/gpsForShift.txt", "\n\n\n\n\n" + DateTime.Now + "\n");
+        File.AppendAllText(Application.persistentDataPath + "/gpsForShift.txt", "\n\n\n\n\n" + "Before LS: " + "\n");
+        File.AppendAllText(Application.persistentDataPath + "/gpsForShift.txt", "" + DateTime.Now + "\n");
         File.AppendAllText(Application.persistentDataPath + "/gpsForShift.txt", "" + DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond + "\n");
+        File.AppendAllText(Application.persistentDataPath + "/gpsForShift.txt", "map pos: " + map.transform.position + "\n");
+        File.AppendAllText(Application.persistentDataPath + "/gpsForShift.txt", "map rot: " + map.transform.rotation.eulerAngles + "\n");
         File.AppendAllText(Application.persistentDataPath + "/gpsForShift.txt", "isMapToppingsHorizontallyLocked: " + isMapToppingsHorizontallyLocked + "\n");
 
         if (isMapToppingsHorizontallyLocked)
         {
-            File.AppendAllText(Application.persistentDataPath + "/gpsForShift.txt", "Before LS: " + "\n");
-            mapToppingsGlobalPositionBeforeLS = mapToppings.transform.position;
+            mapToppingsGlobalPosition = mapToppings.transform.position;
+            mapToppingsGlobalRotation = mapToppings.transform.rotation.eulerAngles;
             File.AppendAllText(Application.persistentDataPath + "/gpsForShift.txt", "mapToppings local Position: " + mapToppings.transform.localPosition + "\n");
-            File.AppendAllText(Application.persistentDataPath + "/gpsForShift.txt", "mapToppings global Position: " + mapToppingsGlobalPositionBeforeLS + "\n");
-            mapToppingsGlobalRotationBeforeLS = mapToppings.transform.rotation.eulerAngles;
-            File.AppendAllText(Application.persistentDataPath + "/gpsForShift.txt", "mapToppings Rotation: " + mapToppingsGlobalRotationBeforeLS + "\n");
-            File.AppendAllText(Application.persistentDataPath + "/gpsForShift.txt", "map pos: " + map.transform.position + "\n");
-            File.AppendAllText(Application.persistentDataPath + "/gpsForShift.txt", "map rot: " + map.transform.rotation.eulerAngles + "\n");
-
+            File.AppendAllText(Application.persistentDataPath + "/gpsForShift.txt", "mapToppings global Position: " + mapToppings.transform.position + "\n");
+            File.AppendAllText(Application.persistentDataPath + "/gpsForShift.txt", "mapToppings local Rotation: " + mapToppings.transform.localRotation.eulerAngles + "\n");
+            File.AppendAllText(Application.persistentDataPath + "/gpsForShift.txt", "mapToppings global Rotation: " + mapToppings.transform.rotation.eulerAngles + "\n");
         }
 
         //STEP 1: rotate around y
@@ -72,22 +72,21 @@ public class LeastSquareScript : MonoBehaviour
 
         //STEP 2: move on x-z plane 
         findeBestPosition();
-        File.AppendAllText(Application.persistentDataPath + "/mapPos.txt", "\n" +DateTime.Now+ "\n");
-        File.AppendAllText(Application.persistentDataPath + "/mapPos.txt", "map position: " + map.transform.position + "\n");
-        File.AppendAllText(Application.persistentDataPath + "/mapPos.txt", "map rotation: " + map.transform.rotation.eulerAngles + "\n");
 
-        //Debug.Log(TAG + "LeastSquareScript OnGpsUpdated end a");
+        File.AppendAllText(Application.persistentDataPath + "/gpsForShift.txt", "After LS: " + "\n");
+        File.AppendAllText(Application.persistentDataPath + "/gpsForShift.txt", "" +DateTime.Now+ "\n");
+        File.AppendAllText(Application.persistentDataPath + "/gpsForShift.txt", "" + DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond + "\n");
+        File.AppendAllText(Application.persistentDataPath + "/gpsForShift.txt", "map pos: " + map.transform.position + "\n");
+        File.AppendAllText(Application.persistentDataPath + "/gpsForShift.txt", "map rot: " + map.transform.rotation.eulerAngles + "\n");
+
         if (isMapToppingsHorizontallyLocked)
         {
-            File.AppendAllText(Application.persistentDataPath + "/gpsForShift.txt", "After LS: " + "\n");
-            mapToppingsGlobalPositionBeforeLS = mapToppings.transform.position;
+            mapToppingsGlobalPosition = mapToppings.transform.position;
+            mapToppingsGlobalRotation = mapToppings.transform.rotation.eulerAngles;
             File.AppendAllText(Application.persistentDataPath + "/gpsForShift.txt", "mapToppings local Position: " + mapToppings.transform.localPosition + "\n");
-            File.AppendAllText(Application.persistentDataPath + "/gpsForShift.txt", "mapToppings global Position: " + mapToppingsGlobalPositionBeforeLS + "\n");
-            mapToppingsGlobalRotationBeforeLS = mapToppings.transform.rotation.eulerAngles;
-            File.AppendAllText(Application.persistentDataPath + "/gpsForShift.txt", "mapToppings Rotation: " + mapToppingsGlobalRotationBeforeLS + "\n");
-            File.AppendAllText(Application.persistentDataPath + "/gpsForShift.txt", "map pos: " + map.transform.position + "\n");
-            File.AppendAllText(Application.persistentDataPath + "/gpsForShift.txt", "map rot: " + map.transform.rotation.eulerAngles + "\n");
-
+            File.AppendAllText(Application.persistentDataPath + "/gpsForShift.txt", "mapToppings global Position: " + mapToppings.transform.position + "\n");
+            File.AppendAllText(Application.persistentDataPath + "/gpsForShift.txt", "mapToppings local Rotation: " + mapToppings.transform.localRotation.eulerAngles + "\n");
+            File.AppendAllText(Application.persistentDataPath + "/gpsForShift.txt", "mapToppings global Rotation: " + mapToppings.transform.rotation.eulerAngles + "\n");
         }
         // after the map is repositioned check if the toppings are in in horizontal lock
         //if (isMapToppingsHorizontallyLocked)

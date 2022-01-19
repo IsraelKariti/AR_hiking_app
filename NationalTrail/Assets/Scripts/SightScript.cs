@@ -26,6 +26,7 @@ public class SightScript : MonoBehaviour
     public bool isPositioned = false;
     private void Awake()
     {
+        File.Delete(Application.persistentDataPath + "/reheight.txt");
         File.Delete(Application.persistentDataPath + "/log.txt");
     }
 
@@ -91,16 +92,23 @@ public class SightScript : MonoBehaviour
     // this function responsible for moving a sign/sight up or down so that the signs won't hide each other
     public void Reheight()
     {
+        File.AppendAllText(Application.persistentDataPath + "/reheight.txt", "reheigt: "+gameObject+"\n");
+        File.AppendAllText(Application.persistentDataPath + "/reheight.txt", ""+DateTime.Now+"\n");
+
         bool flag = false;
         Vector3 originalPosition;
         // check if the sign is hidden, than define original designated position)
         if (checkIfCornersHiddenToOrigin())
         {
+            File.AppendAllText(Application.persistentDataPath + "/reheight.txt", "hidden"  + "\n");
+
             // save the original position (where the sight is suppose to be if it didn't need to move)
-            transform.position = originalPosition = new Vector3(transform.position.x, _alt - transform.parent.GetComponent<MapScript>().MapCenterAlt, transform.position.z);
+            transform.position = originalPosition = new Vector3(transform.position.x, _alt - transform.parent.GetComponent<MapToppingsScript>().MapCenterAlt, transform.position.z);
         }
         else
         {
+            File.AppendAllText(Application.persistentDataPath + "/reheight.txt", "visible" + "\n");
+
             return;
         }
 

@@ -8,6 +8,7 @@ using System;
 public class PoiDetectionScript : MonoBehaviour
 {
     public MapScript map;
+    public MapToppingsScript mapToppingsScript;
     private Vector3 enterPositionGlobal;
     private Vector3 enterPositionInConnector;
     private Vector2 enterPositionInConnectorV2;
@@ -21,17 +22,21 @@ public class PoiDetectionScript : MonoBehaviour
     private void Start()
     {
         File.Delete(Application.persistentDataPath + "/collision.txt");
+        File.Delete(Application.persistentDataPath + "/hitTurn.txt");
     }
     private void OnTriggerEnter(Collider collider)
     {
-
-        //map.OnCamTriggeredPoiEnter(collider);
         if (collider.gameObject.tag == "poiConnector")
         {
             enterPositionGlobal = transform.position;
             enterPositionInConnector = collider.transform.InverseTransformPoint(enterPositionGlobal);
             enterPositionInConnectorV2 = new Vector2(enterPositionInConnector.x, enterPositionInConnector.z);
             File.AppendAllText(Application.persistentDataPath + "/collision.txt", "\n\n\n\n\nenter: " + collider.gameObject + "\nglobal: " + enterPositionGlobal + "   local: " + enterPositionInConnector + "\n\n");
+        }
+        if (collider.gameObject.tag == "turn")
+        {
+            File.AppendAllText(Application.persistentDataPath + "/hitTurn.txt", "hit\n");
+            mapToppingsScript.OnCamTriggeredPoiEnter(collider);
         }
     }
 

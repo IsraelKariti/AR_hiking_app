@@ -6,6 +6,7 @@ TagManager:
   tags:
   - poi
   - poiConnector
+  - turn
   layers:
   - Default
   - TransparentFX

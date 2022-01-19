@@ -12,11 +12,11 @@ GameObject:
   - component: {fileID: 464565554466929767}
   - component: {fileID: 8874859195493440967}
   - component: {fileID: 8327498633404865714}
-  - component: {fileID: 1043044633612974386}
   - component: {fileID: -3071780366354805425}
+  - component: {fileID: 1043044633612974386}
   m_Layer: 0
   m_Name: Turn
-  m_TagString: Untagged
+  m_TagString: turn
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -96,22 +96,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7e83bc29d860fae4faa81bc38ba66359, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!54 &1043044633612974386
-Rigidbody:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6726593916875482509}
-  serializedVersion: 2
-  m_Mass: 1
-  m_Drag: 0
-  m_AngularDrag: 0
-  m_UseGravity: 0
-  m_IsKinematic: 0
-  m_Interpolate: 0
-  m_Constraints: 0
-  m_CollisionDetection: 0
 --- !u!136 &-3071780366354805425
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -126,3 +110,19 @@ CapsuleCollider:
   m_Height: 100
   m_Direction: 1
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!54 &1043044633612974386
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6726593916875482509}
+  serializedVersion: 2
+  m_Mass: 1
+  m_Drag: 0
+  m_AngularDrag: 0
+  m_UseGravity: 0
+  m_IsKinematic: 1
+  m_Interpolate: 0
+  m_Constraints: 0
+  m_CollisionDetection: 0
