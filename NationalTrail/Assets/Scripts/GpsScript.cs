@@ -41,6 +41,9 @@ public class GpsScript : MonoBehaviour
         {
             Permission.RequestUserPermission(Permission.FineLocation);
         }
+        File.Delete(Application.persistentDataPath + "/coordinates.txt");
+        File.AppendAllText(Application.persistentDataPath + "/coordinates.txt", "lat,lon\n");
+
         // unity gps is superrior to native android gps. when i walk in a straight line everything is fine,
         // but when i aim the phone sideways to look at a building the android gps throws the results around.
         // it doesn't deal well with moving the phone all over
@@ -86,6 +89,7 @@ public class GpsScript : MonoBehaviour
 
     public void OnGpsUpdated()
     {
+        File.AppendAllText(Application.persistentDataPath + "/coordinates.txt", "" + inLat + "," + inLon + "\n");
         GpsUpdatedSetMap(inLat, inLon, inHorizontalAcc);
         GpsUpdatedCalcLeastSquares();
     }

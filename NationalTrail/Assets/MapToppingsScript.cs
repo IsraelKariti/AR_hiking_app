@@ -301,33 +301,55 @@ public class MapToppingsScript : MonoBehaviour
     // this will occur when the user has walked parallel to a connector and this will determine the shift (+-3meters)
     // and after the shift has been determined than it will be time to enable the height locking with the poi collider
     // this function can't determine the height as this path is 1 meters away from the poi, so the height is not determined as good as in the poi
-    public void OnUserWalkedParallelToConnector(Vector2 shift)
+    public void OnUserWalkedParallelToConnector(Vector2 designatedLocalShiftInMapXZ)
     {
+        File.AppendAllText(Application.persistentDataPath + "/walkedParallel.txt", "\n\n\n\n\n"+ DateTime.Now+ "\n");
+        File.AppendAllText(Application.persistentDataPath + "/walkedParallel.txt", ""+ DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond + "\n");
         File.AppendAllText(Application.persistentDataPath + "/walkedParallel.txt", "parallel\n");
 
-        if (gpsScript.sampleCountForInitialMapPosition > 0)// this should only occur if the map is positioned already geographcally
+        if (gpsScript.sampleCountForInitialMapPosition > Values.MIN_GPS_SAMPLES_FOR_TOPPINGS_SHIFT)// this should only occur if the map is positioned already geographcally
         {
-            File.AppendAllText(Application.persistentDataPath + "/walkedParallel.txt", "gps is more than 5\n");
+            File.AppendAllText(Application.persistentDataPath + "/walkedParallel.txt", "gps samples: "+ gpsScript.sampleCountForInitialMapPosition + "\n");
 
             //since the toppings can only move in a radius of 3 meters from the gps induced map
             // we have to make sure that the toppings will be in this bound
-            Vector3 localToppingsPos = transform.localPosition;
-            File.AppendAllText(Application.persistentDataPath + "/walkedParallel.txt", "localToppingsPos"+ localToppingsPos+"\n");
+            Vector3 globalToppingsPos = transform.position;
+            File.AppendAllText(Application.persistentDataPath + "/walkedParallel.txt", "isHorizontalLocked: " + isHorizontalLocked + "\n");
+            File.AppendAllText(Application.persistentDataPath + "/walkedParallel.txt", "globalToppingsPos: "+ globalToppingsPos+"\n");
+            File.AppendAllText(Application.persistentDataPath + "/walkedParallel.txt", "localToppingsPos: "+ transform.localPosition+"\n");
 
-            Vector3 shiftXYZ = new Vector3(shift.x, 0, shift.y);
-            File.AppendAllText(Application.persistentDataPath + "/walkedParallel.txt", "shiftXYZ" + shiftXYZ + "\n");
-            Vector3 designatedLocalToppingsPosition = localToppingsPos + shiftXYZ;
-            File.AppendAllText(Application.persistentDataPath + "/walkedParallel.txt", "designatedLocalToppingsPosition" + designatedLocalToppingsPosition + "\n");
+            Vector3 designatedLocalShiftInMapXYZ = new Vector3(designatedLocalShiftInMapXZ.x, 0, designatedLocalShiftInMapXZ.y);
+            File.AppendAllText(Application.persistentDataPath + "/walkedParallel.txt", "shiftXYZ: " + designatedLocalShiftInMapXYZ + "\n");
+            Vector3 designatedLocalToppingsPosition = transform.localPosition + designatedLocalShiftInMapXYZ;
+            Vector2 designatedGlobalToppingsPositionXZ = new Vector2(designatedLocalToppingsPosition.x, designatedLocalToppingsPosition.z);
+            File.AppendAllText(Application.persistentDataPath + "/walkedParallel.txt", "designatedLocalToppingsPosition: " + designatedLocalToppingsPosition + "\n");
+            File.AppendAllText(Application.persistentDataPath + "/walkedParallel.txt", "designatedGlobalToppingsPositionXZ.sqrMagnitude: " + designatedGlobalToppingsPositionXZ.sqrMagnitude + "\n");
+            File.AppendAllText(Application.persistentDataPath + "/walkedParallel.txt", "Values.GPS_ERROR_RADIUS_SQRD: " + Values.GPS_ERROR_RADIUS_SQRD + "\n");
 
-            if (designatedLocalToppingsPosition.sqrMagnitude < Values.GPS_ERROR_RADIUS_SQRD)
+            // check if the toppings will move horizontally to a place within the gps error radius
+            if ( designatedGlobalToppingsPositionXZ.sqrMagnitude < Values.GPS_ERROR_RADIUS_SQRD)
             {
-                // move the map toppings with respect to the base map
-                File.AppendAllText(Application.persistentDataPath + "/walkedParallel.txt", "designatedLocalToppingsPosition.sqrMagnitude" + designatedLocalToppingsPosition.sqrMagnitude + "\n");
-
-                transform.localPosition += shiftXYZ;// the shift is 2 dimension XZ, so the y value of the vector is the z global axis
-
                 // this will cancel the initial dynamic valuation of height
-                IsHorizontalLocked = true;
+                transform.localPosition += designatedLocalShiftInMapXYZ;// the shift is 2 dimension XZ, so the y value of the vector is the z global axis
+                isHorizontalLocked = true;
+
+                // move the map toppings with respect to the base map
+                File.AppendAllText(Application.persistentDataPath + "/walkedParallel.txt", "TOPPINGS SHIFTED!" + "\n");
+                File.AppendAllText(Application.persistentDataPath + "/walkedParallel.txt", "AFTER SHIFT toppings global pos: " + transform.position + "\n");
+                File.AppendAllText(Application.persistentDataPath + "/walkedParallel.txt", "AFTER SHIFT toppings local pos: " + transform.localPosition + "\n");
+                File.AppendAllText(Application.persistentDataPath + "/walkedParallel.txt", "AFTER SHIFT map->toppings: " + Vector3.Distance(transform.position, transform.parent.position) + "\n");
+                File.AppendAllText(Application.persistentDataPath + "/walkedParallel.txt", "AFTER SHIFT isHorizontalLocked: " + isHorizontalLocked + "\n");
+
+            }
+            else// if the shift of the toppings is not subltle anymore and the designated position is out of the 4 meter radius
+            {
+                transform.localPosition = Vector3.zero;
+                isHorizontalLocked = false;
+                File.AppendAllText(Application.persistentDataPath + "/walkedParallel.txt", "TOPPINGS RESET!" + "\n");
+                File.AppendAllText(Application.persistentDataPath + "/walkedParallel.txt", "TOPPINGS RESET toppings global pos: " + transform.position + "\n");
+                File.AppendAllText(Application.persistentDataPath + "/walkedParallel.txt", "TOPPINGS RESET toppings local pos: " + transform.localPosition + "\n");
+                File.AppendAllText(Application.persistentDataPath + "/walkedParallel.txt", "TOPPINGS RESET isHorizontalLocked: " + isHorizontalLocked + "\n");
+
             }
         }
     }
@@ -335,21 +357,22 @@ public class MapToppingsScript : MonoBehaviour
     public void OnCamTriggeredPoiEnter(Collider turn)
     {
         // if the toppings are aligned with the actual physical trail than the pois are located on the actual physical coords
-        if (isHorizontalLocked)
-        {
-            // If i could count on the AR of the phone to give accurate y axis changes during a long period of time than this next lines are redundant
-            // but just to make sure the height of the map is correct i will run this code every time the user is passing a poi
-            // set the height of the map to a fixed height based on the height of the poi (assuming user is walking on ground + holding the phone at 1.1m height above ground)
-            float poiLocalYInMap = turn.transform.parent.localPosition.y;
-            float camHeightInAR = arCam.transform.position.y;
-            float userFeetHeightInAR = camHeightInAR - 1.1f;
-            //how much to lift the map:
-            float liftTheMap = userFeetHeightInAR - poiLocalYInMap;
-            // change map height
-            transform.position = new Vector3(transform.position.x, liftTheMap, transform.position.z);
-            isHeightLocked = true;
-        }
+        //if (isHorizontalLocked)
+        //{
+        //    // If i could count on the AR of the phone to give accurate y axis changes during a long period of time than this next lines are redundant
+        //    // but just to make sure the height of the map is correct i will run this code every time the user is passing a poi
+        //    // set the height of the map to a fixed height based on the height of the poi (assuming user is walking on ground + holding the phone at 1.1m height above ground)
+        //    float poiLocalYInMap = turn.transform.parent.localPosition.y;
+        //    float camHeightInAR = arCam.transform.position.y;
+        //    float userFeetHeightInAR = camHeightInAR - 1.1f;
+        //    //how much to lift the map:
+        //    float liftTheMap = userFeetHeightInAR - poiLocalYInMap;
+        //    // change map height
+        //    transform.position = new Vector3(transform.position.x, liftTheMap, transform.position.z);
+        //    isHeightLocked = true;
         //}
+        //}
+
         // this will invoke the dependency of the height map from the y value of the camera
         // after this line the height of the map will be lock to the height of the first
         //if (gpsScript.sampleCountForInitialMapPosition > 5)// this should only occur if the map is positioned already geographcally
