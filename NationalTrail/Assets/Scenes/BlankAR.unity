@@ -1229,7 +1229,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &538079013
 Transform:
   m_ObjectHideFlags: 0
@@ -1820,7 +1820,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   text: {fileID: 1483217169}
-  shiftEnabledIndicator: {fileID: 1463277172}
   arCam: {fileID: 1354141926}
 --- !u!4 &722029919
 Transform:
@@ -2237,6 +2236,8 @@ MonoBehaviour:
   mapScript: {fileID: 223974227}
   groundScript: {fileID: 1849324436}
   gpsScript: {fileID: 722029918}
+  collisionDetector: {fileID: 538079012}
+  shiftEnabledTextIndicator: {fileID: 1463277172}
 --- !u!4 &1282245232
 Transform:
   m_ObjectHideFlags: 0

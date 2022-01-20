@@ -9,6 +9,8 @@ public class PoiDetectionScript : MonoBehaviour
 {
     public MapScript map;
     public MapToppingsScript mapToppingsScript;
+    public LeastSquareScript leastSquareScript;
+
     private Vector3 enterPositionGlobal;
     private Vector3 enterPositionInConnector;
     private Vector2 enterPositionInConnectorV2;
@@ -18,20 +20,30 @@ public class PoiDetectionScript : MonoBehaviour
     private Vector2 exitPositionInConnectorV2;
 
     private Vector3 colliderPositionGlobal;
-    //public Text t;
+
+    private List<GameObject> enteredConnectors;
+
+    // this entire game object is only enabled by the LS script, after the map has been stable in the last 3 gps samples
     private void Start()
     {
+        enteredConnectors = new List<GameObject>();
         File.Delete(Application.persistentDataPath + "/collision.txt");
         File.Delete(Application.persistentDataPath + "/hitTurn.txt");
     }
     private void OnTriggerEnter(Collider collider)
     {
-        if (collider.gameObject.tag == "poiConnector")
+        if (collider.gameObject.tag == "poiConnector" )
         {
+            // disable the LS script to avoid movement in the map
+            leastSquareScript.EnableLS = false;
+
             enterPositionGlobal = transform.position;
             enterPositionInConnector = collider.transform.InverseTransformPoint(enterPositionGlobal);
             enterPositionInConnectorV2 = new Vector2(enterPositionInConnector.x, enterPositionInConnector.z);
-            File.AppendAllText(Application.persistentDataPath + "/collision.txt", "\n\n\n\n\nenter: " + collider.gameObject + "\nglobal: " + enterPositionGlobal + "   local: " + enterPositionInConnector + "\n\n");
+            //enteredConnectors.Add(collider.gameObject);
+            File.AppendAllText(Application.persistentDataPath + "/collision.txt", "\n\n\n\n\n" + DateTime.Now + "\n");
+            File.AppendAllText(Application.persistentDataPath + "/collision.txt", "" + DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond + "\n");
+            File.AppendAllText(Application.persistentDataPath + "/collision.txt", "enter: " + collider.gameObject + "\nglobal: " + enterPositionGlobal + "   local: " + enterPositionInConnector + "\n\n");
         }
         if (collider.gameObject.tag == "turn")
         {
@@ -86,6 +98,9 @@ public class PoiDetectionScript : MonoBehaviour
                 collider.transform.parent.GetComponent<MapToppingsScript>().OnUserWalkedParallelToConnector(localShiftInMapXZ);
 
             }
+
+            // after the shift has finished reenable the LS script
+            leastSquareScript.EnableLS = true;
 
         }
     }

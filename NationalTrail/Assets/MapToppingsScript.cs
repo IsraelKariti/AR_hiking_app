@@ -320,7 +320,8 @@ public class MapToppingsScript : MonoBehaviour
         File.AppendAllText(Application.persistentDataPath + "/walkedParallel.txt", ""+ DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond + "\n");
         File.AppendAllText(Application.persistentDataPath + "/walkedParallel.txt", "parallel\n");
 
-        if (gpsScript.sampleCountForInitialMapPosition > Values.MIN_GPS_SAMPLES_FOR_TOPPINGS_SHIFT)// this should only occur if the map is positioned already geographcally
+        // this only occur if the map is positioned already geographcally stable enough
+        // otherwise the LS script won't enable the detection game object
         {
             File.AppendAllText(Application.persistentDataPath + "/walkedParallel.txt", "gps samples: "+ gpsScript.sampleCountForInitialMapPosition + "\n");
 
