@@ -36,7 +36,7 @@ public class LeastSquareScript : MonoBehaviour
     private bool mapIsStable = false;
     private bool enableLS = true;
     public bool MapIsStable { get => mapIsStable; set => mapIsStable = value; }
-    public bool EnableLS { get => enableLS; set => enableLS = value; }
+    public bool EnableLS { get { return enableLS; } set { enableLS = value; } }
 
     private void Start()
     {
@@ -45,6 +45,7 @@ public class LeastSquareScript : MonoBehaviour
         gpsScript.GpsUpdatedCalcLeastSquares += OnGpsUpdated;
         File.Delete(Application.persistentDataPath + "/mapPos.txt");
         File.Delete(Application.persistentDataPath + "/gpsForShift.txt");
+        File.Delete(Application.persistentDataPath + "/LSTRACKER.txt");
 
         File.AppendAllText(Application.persistentDataPath + "/mapPos.txt", "Position on LS\n");
 
@@ -78,6 +79,12 @@ public class LeastSquareScript : MonoBehaviour
                 File.AppendAllText(Application.persistentDataPath + "/gpsForShift.txt", "mapToppings local Rotation: " + mapToppings.transform.localRotation.eulerAngles + "\n");
                 File.AppendAllText(Application.persistentDataPath + "/gpsForShift.txt", "mapToppings global Rotation: " + mapToppings.transform.rotation.eulerAngles + "\n");
             }
+
+
+            File.AppendAllText(Application.persistentDataPath + "/LSTRACKER.txt", "\n\n\n\n");
+            File.AppendAllText(Application.persistentDataPath + "/LSTRACKER.txt", "\n\n\n\n");
+            File.AppendAllText(Application.persistentDataPath + "/LSTRACKER.txt", "" + DateTime.Now + "\n");
+            File.AppendAllText(Application.persistentDataPath + "/LSTRACKER.txt", "" + DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond + "\n");
 
             //STEP 1: rotate around y
             findBestRotation();
@@ -130,20 +137,26 @@ public class LeastSquareScript : MonoBehaviour
 
     private void checkStability()
     {
+        File.AppendAllText(Application.persistentDataPath + "/LSTRACKER.txt", "countGpsSamplesConstantRotation: "+ countGpsSamplesConstantRotation + "\n");
+        File.AppendAllText(Application.persistentDataPath + "/LSTRACKER.txt", "countGpsSamplesConstantPositionX: " + countGpsSamplesConstantPositionX + "\n");
+        File.AppendAllText(Application.persistentDataPath + "/LSTRACKER.txt", "countGpsSamplesConstantPositionZ: " + countGpsSamplesConstantPositionZ + "\n");
+
         // check if all conditions for stable map is applied and enable collision detection for shifting
-        if (countGpsSamplesConstantRotation == Values.MIN_GPS_SAMPLES_TO_CONSTANT_MAP_FOR_STABILITY &&
-            countGpsSamplesConstantPositionX == Values.MIN_GPS_SAMPLES_TO_CONSTANT_MAP_FOR_STABILITY &&
-            countGpsSamplesConstantPositionZ == Values.MIN_GPS_SAMPLES_TO_CONSTANT_MAP_FOR_STABILITY)
+        if (countGpsSamplesConstantRotation >= Values.MIN_GPS_SAMPLES_TO_CONSTANT_MAP_FOR_STABILITY &&
+            countGpsSamplesConstantPositionX >= Values.MIN_GPS_SAMPLES_TO_CONSTANT_MAP_FOR_STABILITY &&
+            countGpsSamplesConstantPositionZ >= Values.MIN_GPS_SAMPLES_TO_CONSTANT_MAP_FOR_STABILITY)
         {
             mapIsStable = true;
             collisionDetector.SetActive(true);
             shiftEnabledTextIndicator.text = "Y";
+            File.AppendAllText(Application.persistentDataPath + "/LSTRACKER.txt", "YES" + "\n");
         }
         else
         {
             mapIsStable = false;
             collisionDetector.SetActive(false);
             shiftEnabledTextIndicator.text = "N";
+            File.AppendAllText(Application.persistentDataPath + "/LSTRACKER.txt", "NO" + "\n");
         }
     }
 
@@ -204,9 +217,10 @@ public class LeastSquareScript : MonoBehaviour
         map.transform.RotateAround(axVector3, Vector3.up, -1 * rotateDirection);
         counter += (-1 * rotateDirection);
         currLS = prevLS;
+        File.AppendAllText(Application.persistentDataPath + "/LSTRACKER.txt", "rotation count: "+counter + "\n");
 
         //if the angle (around Y axis) stayed the same notify the counter
-        if (counter <= Values.MIN_THRESHOLD_ROTATION_Y_CONSIDERED_STABLE)
+        if (Math.Abs(counter) <= Values.MIN_THRESHOLD_ROTATION_Y_CONSIDERED_STABLE)
             countGpsSamplesConstantRotation++;
         else
             countGpsSamplesConstantRotation = 0;
@@ -215,23 +229,24 @@ public class LeastSquareScript : MonoBehaviour
     {
         float bestX = findBestPositionOnXAxis();
         float bestZ = findBestPositionOnZAxis();
+
         Vector3 mapMovement = new Vector3(bestX, 0, bestZ);
 
         map.transform.position += mapMovement;
 
         // if the shift in position is stable increase the counter
-        if (bestX <= Values.MIN_THRESHOLD_REPOSITION_X_CONSIDERED_STABLE)
+        if (Mathf.Abs(bestX) <= Values.MIN_THRESHOLD_REPOSITION_X_CONSIDERED_STABLE)
             countGpsSamplesConstantPositionX++;
         else
             countGpsSamplesConstantPositionX = 0;
 
-        if (bestZ <= Values.MIN_THRESHOLD_REPOSITION_Z_CONSIDERED_STABLE)
-            countGpsSamplesConstantPositionX++;
+        if (Mathf.Abs(bestZ) <= Values.MIN_THRESHOLD_REPOSITION_Z_CONSIDERED_STABLE)
+            countGpsSamplesConstantPositionZ++;
         else
             countGpsSamplesConstantPositionZ = 0;
 
-
-        
+        File.AppendAllText(Application.persistentDataPath + "/LSTRACKER.txt", "x shift: " + bestX + "\n");
+        File.AppendAllText(Application.persistentDataPath + "/LSTRACKER.txt", "z shift: " + bestZ + "\n");
     }
 
     private float findBestPositionOnXAxis()

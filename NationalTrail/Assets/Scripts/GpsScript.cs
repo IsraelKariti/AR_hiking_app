@@ -42,6 +42,7 @@ public class GpsScript : MonoBehaviour
             Permission.RequestUserPermission(Permission.FineLocation);
         }
         File.Delete(Application.persistentDataPath + "/coordinates.txt");
+        File.Delete(Application.persistentDataPath + "/gps.txt");
         File.AppendAllText(Application.persistentDataPath + "/coordinates.txt", "lat,lon\n");
 
         // unity gps is superrior to native android gps. when i walk in a straight line everything is fine,
@@ -63,10 +64,14 @@ public class GpsScript : MonoBehaviour
         text.text = _skipSamples.ToString();
         unityGPS();
         //EmulateGPS();
+        File.AppendAllText(Application.persistentDataPath + "/gps.txt", "update\n");
+
     }
 
     private void unityGPS()
     {
+        File.AppendAllText(Application.persistentDataPath + "/gps.txt", "unityGPS\n");
+
         if (Input.location.status == LocationServiceStatus.Running && Input.location.lastData.timestamp > prevTimeStamp && _gpsOn && Input.location.lastData.horizontalAccuracy < 8.0f)
         {
             inLat = Input.location.lastData.latitude;
@@ -90,6 +95,8 @@ public class GpsScript : MonoBehaviour
 
     public void OnGpsUpdated()
     {
+        File.AppendAllText(Application.persistentDataPath + "/gps.txt", "OnGpsUpdated\n");
+
         File.AppendAllText(Application.persistentDataPath + "/coordinates.txt", "" + inLat + "," + inLon + "\n");
         GpsUpdatedSetMap(inLat, inLon, inHorizontalAcc);
         GpsUpdatedCalcLeastSquares();

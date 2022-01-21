@@ -21,77 +21,80 @@ public class PoiDetectionScript : MonoBehaviour
 
     private Vector3 colliderPositionGlobal;
 
-    private List<GameObject> enteredConnectors;
+    private GameObject currEnteredConnector;
 
     // this entire game object is only enabled by the LS script, after the map has been stable in the last 3 gps samples
     private void Start()
     {
-        enteredConnectors = new List<GameObject>();
         File.Delete(Application.persistentDataPath + "/collision.txt");
         File.Delete(Application.persistentDataPath + "/hitTurn.txt");
     }
     private void OnTriggerEnter(Collider collider)
     {
-        if (collider.gameObject.tag == "poiConnector" )
+        // don't bother about entering a collider if you are already inside another collider
+        if (collider.gameObject.tag == "poiConnector" && currEnteredConnector == null) 
         {
             // disable the LS script to avoid movement in the map
             leastSquareScript.EnableLS = false;
-
             enterPositionGlobal = transform.position;
             enterPositionInConnector = collider.transform.InverseTransformPoint(enterPositionGlobal);
             enterPositionInConnectorV2 = new Vector2(enterPositionInConnector.x, enterPositionInConnector.z);
-            //enteredConnectors.Add(collider.gameObject);
-            File.AppendAllText(Application.persistentDataPath + "/collision.txt", "\n\n\n\n\n" + DateTime.Now + "\n");
-            File.AppendAllText(Application.persistentDataPath + "/collision.txt", "" + DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond + "\n");
-            File.AppendAllText(Application.persistentDataPath + "/collision.txt", "enter: " + collider.gameObject + "\nglobal: " + enterPositionGlobal + "   local: " + enterPositionInConnector + "\n\n");
+            currEnteredConnector = collider.gameObject;
+            File.AppendAllText(Application.persistentDataPath + "/collision.txt", "\n\n\n\n\n" + DateTime.Now + " " + DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond + "\n");
+            File.AppendAllText(Application.persistentDataPath + "/collision.txt", "enter: " + collider.gameObject + "collider global pos:"+collider.transform.position+ "\n");
+            File.AppendAllText(Application.persistentDataPath + "/collision.txt", "entor pos global: " + enterPositionGlobal + "   enter pos in connector: " + enterPositionInConnector + "\n");
+            File.AppendAllText(Application.persistentDataPath + "/collision.txt", "enterPositionInConnectorV2: " + enterPositionInConnectorV2 + "\n");
         }
-        if (collider.gameObject.tag == "turn")
+        if (collider.gameObject.tag.CompareTo("turn") == 0)
         {
             File.AppendAllText(Application.persistentDataPath + "/hitTurn.txt", "hit\n");
+            // this will make map toppings script check if the toppings is locked horizontally before actually locking vertically
             mapToppingsScript.OnCamTriggeredPoiEnter(collider);
         }
     }
 
     private void OnTriggerExit(Collider collider)
     {
-        if (collider.gameObject.tag == "poiConnector")
+        // this exit is only relevent when leaving the connector that has been entered originally
+        if (collider.gameObject.tag == "poiConnector" && GameObject.ReferenceEquals( collider.gameObject, currEnteredConnector) )
         {
             exitPositionGlobal = transform.position;
             Transform colliderTransform = collider.transform;
             exitPositionInConnector = colliderTransform.InverseTransformPoint(exitPositionGlobal);
             exitPositionInConnectorV2 = new Vector2(exitPositionInConnector.x, exitPositionInConnector.z);
-
-            File.AppendAllText(Application.persistentDataPath + "/collision.txt", "" + DateTime.Now + "\n");
-            File.AppendAllText(Application.persistentDataPath + "/collision.txt", "" + DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond + "\n");
-            File.AppendAllText(Application.persistentDataPath + "/collision.txt", "exit: " + collider.gameObject + "\nglobal: " + exitPositionGlobal + "     local: " + exitPositionInConnector + "\n\n");
+            float diffConnectorXZ = Vector2.Distance(enterPositionInConnectorV2, exitPositionInConnectorV2);// check if the user has walked parallel
+            float diffConnectorY = Mathf.Abs(enterPositionInConnector.y - exitPositionInConnector.y);// check if the user has walked at least 2 meters in the direction of the connector
+            File.AppendAllText(Application.persistentDataPath + "/collision.txt", "" + DateTime.Now + " " + DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond + "\n");
+            File.AppendAllText(Application.persistentDataPath + "/collision.txt", "exit: " + collider.gameObject + "\ncollider global pos: " +  collider.transform.position+ "\n");
+            File.AppendAllText(Application.persistentDataPath + "/collision.txt", "global: " + exitPositionGlobal + "     local: " + exitPositionInConnector + "\n");
             // check if the phone camera was walking parallel to the connector
             // (the xz diff of enter and exit points are less than 1 meter) (connector local y is the axis that the user is walking through)
-            float diffConnectorXZ = Vector2.Distance(enterPositionInConnectorV2, exitPositionInConnectorV2);
             File.AppendAllText(Application.persistentDataPath + "/collision.txt", "diffConnectorXZ: " + diffConnectorXZ+"\n");
+            File.AppendAllText(Application.persistentDataPath + "/collision.txt", "diffConnectorY: " + diffConnectorY+"\n");
 
             // check if the user is moving parallel to a connector
-            if (diffConnectorXZ < Values.ENTER_EXIT_DIFF_XZ_PARALLEL)
+            if (diffConnectorXZ < Values.ENTER_EXIT_DIFF_XZ_PARALLEL && diffConnectorY > Values.ENTER_EXIT_DIFF_Y_PARALLEL)
             {
-                File.AppendAllText(Application.persistentDataPath + "/collision.txt", "is parallel\n");
-                colliderPositionGlobal = colliderTransform.position;
-                File.AppendAllText(Application.persistentDataPath + "/collision.txt", "colliderPositionGlobal" + colliderPositionGlobal + "\n");
-
                 // check if the parralel line is less than 3 meters from the map toppings in the global XZ plane
+
+                colliderPositionGlobal = colliderTransform.position;
                 Vector2 shiftGlobalXZ = getGlobalShift();
                 Vector3 shiftGlobalXYZ = new Vector3(shiftGlobalXZ.x, 0, shiftGlobalXZ.y);
+                Vector3 prevLocalShiftInMapXYZ = map.transform.GetChild(0).localPosition;
+                Vector2 prevLocalShiftInMapXZ = new Vector2(prevLocalShiftInMapXYZ.x, prevLocalShiftInMapXYZ.z);
+                Vector3 localShiftInMapXYZ = map.transform.InverseTransformDirection(shiftGlobalXYZ);
+                Vector2 localShiftInMapXZ = new Vector2(localShiftInMapXYZ.x, localShiftInMapXYZ.z);
+                Vector2 combinedLocalShiftInMapXZ = localShiftInMapXZ + prevLocalShiftInMapXZ;
+
+                File.AppendAllText(Application.persistentDataPath + "/collision.txt", "is parallel\n");
+                File.AppendAllText(Application.persistentDataPath + "/collision.txt", "colliderPositionGlobal" + colliderPositionGlobal + "\n");
                 File.AppendAllText(Application.persistentDataPath + "/collision.txt", "shiftGlobalXZ" + shiftGlobalXZ + "\n");
                 File.AppendAllText(Application.persistentDataPath + "/collision.txt", "shiftGlobalXYZ" + shiftGlobalXYZ + "\n");
                 File.AppendAllText(Application.persistentDataPath + "/collision.txt", "shiftGlobalXZ.sqrMagnitude: " + shiftGlobalXZ.sqrMagnitude + "\n");
-                Vector3 localShiftInMapXYZ = map.transform.InverseTransformDirection(shiftGlobalXYZ);
-                Vector2 localShiftInMapXZ = new Vector2(localShiftInMapXYZ.x, localShiftInMapXYZ.z);
                 File.AppendAllText(Application.persistentDataPath + "/collision.txt", "localShiftInMapXYZ" + localShiftInMapXYZ + "\n");
                 File.AppendAllText(Application.persistentDataPath + "/collision.txt", "localShiftInMapXZ" + localShiftInMapXZ + "\n");
-                Vector3 prevLocalShiftInMapXYZ = map.transform.GetChild(0).localPosition;
-                Vector2 prevLocalShiftInMapXZ = new Vector2(prevLocalShiftInMapXYZ.x, prevLocalShiftInMapXYZ.z);
                 File.AppendAllText(Application.persistentDataPath + "/collision.txt", "prevLocalShiftInMapXYZ" + prevLocalShiftInMapXYZ + "\n");
                 File.AppendAllText(Application.persistentDataPath + "/collision.txt", "prevLocalShiftInMapXZ" + prevLocalShiftInMapXZ + "\n");
-
-                Vector2 combinedLocalShiftInMapXZ = localShiftInMapXZ + prevLocalShiftInMapXZ;
                 File.AppendAllText(Application.persistentDataPath + "/collision.txt", "combinedLocalShiftInMap: " + combinedLocalShiftInMapXZ + "\n");
                 File.AppendAllText(Application.persistentDataPath + "/collision.txt", "combinedLocalShiftInMap.sqrMagnitude: " + combinedLocalShiftInMapXZ.sqrMagnitude + "\n");
 
@@ -101,7 +104,8 @@ public class PoiDetectionScript : MonoBehaviour
 
             // after the shift has finished reenable the LS script
             leastSquareScript.EnableLS = true;
-
+            // this will unlock the enter-exit procedure
+            currEnteredConnector = null;
         }
     }
 
