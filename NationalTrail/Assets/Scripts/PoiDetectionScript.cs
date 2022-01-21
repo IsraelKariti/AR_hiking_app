@@ -10,7 +10,7 @@ public class PoiDetectionScript : MonoBehaviour
     public MapScript map;
     public MapToppingsScript mapToppingsScript;
     public LeastSquareScript leastSquareScript;
-
+    public Text insideIndicator;
     private Vector3 enterPositionGlobal;
     private Vector3 enterPositionInConnector;
     private Vector2 enterPositionInConnectorV2;
@@ -44,6 +44,7 @@ public class PoiDetectionScript : MonoBehaviour
             File.AppendAllText(Application.persistentDataPath + "/collision.txt", "enter: " + collider.gameObject + "collider global pos:"+collider.transform.position+ "\n");
             File.AppendAllText(Application.persistentDataPath + "/collision.txt", "entor pos global: " + enterPositionGlobal + "   enter pos in connector: " + enterPositionInConnector + "\n");
             File.AppendAllText(Application.persistentDataPath + "/collision.txt", "enterPositionInConnectorV2: " + enterPositionInConnectorV2 + "\n");
+            insideIndicator.text = "I";
         }
         if (collider.gameObject.tag.CompareTo("turn") == 0)
         {
@@ -103,6 +104,8 @@ public class PoiDetectionScript : MonoBehaviour
             leastSquareScript.EnableLS = true;
             // this will unlock the enter-exit procedure
             currEnteredConnector = null;
+
+            insideIndicator.text = "O";
         }
     }
 
