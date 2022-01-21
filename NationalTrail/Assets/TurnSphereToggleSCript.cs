@@ -15,7 +15,6 @@ public class TurnSphereToggleSCript : MonoBehaviour
         else
         {
             mat.color = new Color(1, 1, 1, 0);
-
         }
     }
 }
