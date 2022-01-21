@@ -76,7 +76,6 @@ public class PoiDetectionScript : MonoBehaviour
             if (diffConnectorXZ < Values.ENTER_EXIT_DIFF_XZ_PARALLEL && diffConnectorY > Values.ENTER_EXIT_DIFF_Y_PARALLEL)
             {
                 // check if the parralel line is less than 3 meters from the map toppings in the global XZ plane
-
                 colliderPositionGlobal = colliderTransform.position;
                 Vector2 shiftGlobalXZ = getGlobalShift();
                 Vector3 shiftGlobalXYZ = new Vector3(shiftGlobalXZ.x, 0, shiftGlobalXZ.y);
@@ -99,9 +98,7 @@ public class PoiDetectionScript : MonoBehaviour
                 File.AppendAllText(Application.persistentDataPath + "/collision.txt", "combinedLocalShiftInMap.sqrMagnitude: " + combinedLocalShiftInMapXZ.sqrMagnitude + "\n");
 
                 collider.transform.parent.GetComponent<MapToppingsScript>().OnUserWalkedParallelToConnector(localShiftInMapXZ);
-
             }
-
             // after the shift has finished reenable the LS script
             leastSquareScript.EnableLS = true;
             // this will unlock the enter-exit procedure
@@ -112,7 +109,6 @@ public class PoiDetectionScript : MonoBehaviour
     // get the global direction on the XZ plane that the collider+toppings should move
     private Vector2 getGlobalShift()
     {
-
         // take the connector XZ middle point
         Vector2 colliderGlobalXZ = new Vector2(colliderPositionGlobal.x, colliderPositionGlobal.z);
         File.AppendAllText(Application.persistentDataPath + "/collision.txt", "colliderGlobalXZ" + colliderGlobalXZ + "\n");
@@ -123,11 +119,7 @@ public class PoiDetectionScript : MonoBehaviour
         Vector2 middleParallelGlobalXZ = new Vector2(middleParallelGlobal.x, middleParallelGlobal.z);
         File.AppendAllText(Application.persistentDataPath + "/collision.txt", "middleParallelGlobalXZ" + middleParallelGlobalXZ + "\n");
 
-        
-
         // compare
         return middleParallelGlobalXZ - colliderGlobalXZ;
     }
-
-
 }
