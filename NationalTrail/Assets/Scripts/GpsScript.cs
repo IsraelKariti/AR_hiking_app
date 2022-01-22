@@ -54,7 +54,7 @@ public class GpsScript : MonoBehaviour
     void Start()
     {
         _gpsOn = true;
-        Input.location.Start(0, 1);
+        Input.location.Start(0, 0);
     }
 
     // Update is called once per frame
