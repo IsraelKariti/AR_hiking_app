@@ -28,8 +28,10 @@ public class LeastSquareScript : MonoBehaviour
     private Vector3 axVector3;
     private float prevAngle;
     //private bool _axOn;
-    private Vector3 mapToppingsGlobalPosition;
-    private Vector3 mapToppingsGlobalRotation;
+    private Vector3 mapToppingsGlobalPositionBeforeLS;
+    private Vector3 mapToppingsLocalPositionBeforeLS;
+    private Vector3 mapToppingsGlobalPositionAfterLS;
+    private Vector3 mapToppingsLocalPositionAfterLS;
     private int countGpsSamplesConstantRotation = 0;
     private int countGpsSamplesConstantPositionX = 0;
     private int countGpsSamplesConstantPositionZ = 0;
@@ -72,12 +74,10 @@ public class LeastSquareScript : MonoBehaviour
 
             if (isMapToppingsHorizontallyLocked)
             {
-                mapToppingsGlobalPosition = mapToppings.transform.position;
-                mapToppingsGlobalRotation = mapToppings.transform.rotation.eulerAngles;
-                File.AppendAllText(Application.persistentDataPath + "/gpsForShift.txt", "mapToppings local Position: " + mapToppings.transform.localPosition + "\n");
-                File.AppendAllText(Application.persistentDataPath + "/gpsForShift.txt", "mapToppings global Position: " + mapToppings.transform.position + "\n");
-                File.AppendAllText(Application.persistentDataPath + "/gpsForShift.txt", "mapToppings local Rotation: " + mapToppings.transform.localRotation.eulerAngles + "\n");
-                File.AppendAllText(Application.persistentDataPath + "/gpsForShift.txt", "mapToppings global Rotation: " + mapToppings.transform.rotation.eulerAngles + "\n");
+                mapToppingsGlobalPositionBeforeLS = mapToppings.transform.position;
+                mapToppingsLocalPositionBeforeLS = mapToppings.transform.localPosition;
+                File.AppendAllText(Application.persistentDataPath + "/gpsForShift.txt", "mapToppings global Position: " + mapToppingsGlobalPositionBeforeLS + "\n");
+                File.AppendAllText(Application.persistentDataPath + "/gpsForShift.txt", "mapToppings local Position: " + mapToppingsLocalPositionBeforeLS + "\n");
             }
 
 
@@ -103,12 +103,10 @@ public class LeastSquareScript : MonoBehaviour
 
             if (isMapToppingsHorizontallyLocked)
             {
-                mapToppingsGlobalPosition = mapToppings.transform.position;
-                mapToppingsGlobalRotation = mapToppings.transform.rotation.eulerAngles;
-                File.AppendAllText(Application.persistentDataPath + "/gpsForShift.txt", "mapToppings local Position: " + mapToppings.transform.localPosition + "\n");
-                File.AppendAllText(Application.persistentDataPath + "/gpsForShift.txt", "mapToppings global Position: " + mapToppings.transform.position + "\n");
-                File.AppendAllText(Application.persistentDataPath + "/gpsForShift.txt", "mapToppings local Rotation: " + mapToppings.transform.localRotation.eulerAngles + "\n");
-                File.AppendAllText(Application.persistentDataPath + "/gpsForShift.txt", "mapToppings global Rotation: " + mapToppings.transform.rotation.eulerAngles + "\n");
+                mapToppingsGlobalPositionAfterLS = mapToppings.transform.position;
+                mapToppingsLocalPositionAfterLS = mapToppings.transform.localPosition;
+                File.AppendAllText(Application.persistentDataPath + "/gpsForShift.txt", "mapToppings global Position: " + mapToppingsGlobalPositionAfterLS + "\n");
+                File.AppendAllText(Application.persistentDataPath + "/gpsForShift.txt", "mapToppings local Position: " + mapToppingsLocalPositionAfterLS + "\n");
             }
             // after the map is repositioned check if the toppings are in in horizontal lock
             //if (isMapToppingsHorizontallyLocked)

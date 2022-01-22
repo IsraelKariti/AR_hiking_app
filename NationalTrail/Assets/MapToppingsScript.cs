@@ -328,21 +328,21 @@ public class MapToppingsScript : MonoBehaviour
             //since the toppings can only move in a radius of 3 meters from the gps induced map
             // we have to make sure that the toppings will be in this bound
             Vector3 globalToppingsPos = transform.position;
+            Vector3 designatedLocalShiftInMapXYZ = new Vector3(designatedLocalShiftInMapXZ.x, 0, designatedLocalShiftInMapXZ.y);
+            Vector3 designatedLocalToppingsPosition = transform.localPosition + designatedLocalShiftInMapXYZ;
+            Vector2 designatedLocalToppingsPositionXZ = new Vector2(designatedLocalToppingsPosition.x, designatedLocalToppingsPosition.z);
+
             File.AppendAllText(Application.persistentDataPath + "/walkedParallel.txt", "isHorizontalLocked: " + isHorizontalLocked + "\n");
             File.AppendAllText(Application.persistentDataPath + "/walkedParallel.txt", "globalToppingsPos: "+ globalToppingsPos+"\n");
             File.AppendAllText(Application.persistentDataPath + "/walkedParallel.txt", "localToppingsPos: "+ transform.localPosition+"\n");
-
-            Vector3 designatedLocalShiftInMapXYZ = new Vector3(designatedLocalShiftInMapXZ.x, 0, designatedLocalShiftInMapXZ.y);
             File.AppendAllText(Application.persistentDataPath + "/walkedParallel.txt", "shiftXYZ: " + designatedLocalShiftInMapXYZ + "\n");
-            Vector3 designatedLocalToppingsPosition = transform.localPosition + designatedLocalShiftInMapXYZ;
-            Vector2 designatedGlobalToppingsPositionXZ = new Vector2(designatedLocalToppingsPosition.x, designatedLocalToppingsPosition.z);
             File.AppendAllText(Application.persistentDataPath + "/walkedParallel.txt", "designatedLocalToppingsPosition: " + designatedLocalToppingsPosition + "\n");
-            File.AppendAllText(Application.persistentDataPath + "/walkedParallel.txt", "designatedGlobalToppingsPositionXZ.sqrMagnitude: " + designatedGlobalToppingsPositionXZ.sqrMagnitude + "\n");
+            File.AppendAllText(Application.persistentDataPath + "/walkedParallel.txt", "designatedGlobalToppingsPositionXZ.sqrMagnitude: " + designatedLocalToppingsPositionXZ.sqrMagnitude + "\n");
             File.AppendAllText(Application.persistentDataPath + "/walkedParallel.txt", "Values.GPS_ERROR_RADIUS_SQRD: " + Values.GPS_ERROR_RADIUS_SQRD + "\n");
 
             // check if the toppings will move horizontally to a place within the gps error radius
-            if ( designatedGlobalToppingsPositionXZ.sqrMagnitude < Values.GPS_ERROR_RADIUS_SQRD &&
-                designatedGlobalToppingsPositionXZ.sqrMagnitude > Values.MIN_THRESHOLD_SHIFT_SQRD)
+            if ( designatedLocalToppingsPositionXZ.sqrMagnitude < Values.GPS_ERROR_RADIUS_SQRD &&
+                designatedLocalShiftInMapXZ.sqrMagnitude > Values.MIN_THRESHOLD_SHIFT_SQRD)
             {
                 // this will cancel the initial dynamic valuation of height
                 transform.localPosition += designatedLocalShiftInMapXYZ;// the shift is 2 dimension XZ, so the y value of the vector is the z global axis
@@ -356,7 +356,8 @@ public class MapToppingsScript : MonoBehaviour
                 File.AppendAllText(Application.persistentDataPath + "/walkedParallel.txt", "AFTER SHIFT isHorizontalLocked: " + isHorizontalLocked + "\n");
 
             }
-            else// if the shift of the toppings is not subltle anymore and the designated position is out of the 4 meter radius
+            // only if the user is far away from the map (ex. on the other side of valley then reset)
+            else if(designatedLocalToppingsPositionXZ.sqrMagnitude > Values.GPS_ERROR_RADIUS_SQRD)// if the shift of the toppings is not subltle anymore and the designated position is out of the 4 meter radius
             {
                 transform.localPosition = Vector3.zero;
                 isHorizontalLocked = false;

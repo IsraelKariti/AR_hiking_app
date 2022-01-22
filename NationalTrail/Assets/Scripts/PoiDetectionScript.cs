@@ -41,7 +41,7 @@ public class PoiDetectionScript : MonoBehaviour
             enterPositionInConnectorV2 = new Vector2(enterPositionInConnector.x, enterPositionInConnector.z);
             currEnteredConnector = collider.gameObject;
             File.AppendAllText(Application.persistentDataPath + "/collision.txt", "\n\n\n\n\n" + DateTime.Now + " " + DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond + "\n");
-            File.AppendAllText(Application.persistentDataPath + "/collision.txt", "enter: " + collider.gameObject + "collider global pos:"+collider.transform.position+ "\n");
+            File.AppendAllText(Application.persistentDataPath + "/collision.txt", "enter: " + collider.gameObject + " collider global pos:"+collider.transform.position+ "\n");
             File.AppendAllText(Application.persistentDataPath + "/collision.txt", "entor pos global: " + enterPositionGlobal + "   enter pos in connector: " + enterPositionInConnector + "\n");
             File.AppendAllText(Application.persistentDataPath + "/collision.txt", "enterPositionInConnectorV2: " + enterPositionInConnectorV2 + "\n");
             insideIndicator.text = "I";
@@ -65,11 +65,10 @@ public class PoiDetectionScript : MonoBehaviour
             exitPositionInConnectorV2 = new Vector2(exitPositionInConnector.x, exitPositionInConnector.z);
             float diffConnectorXZ = Vector2.Distance(enterPositionInConnectorV2, exitPositionInConnectorV2);// check if the user has walked parallel
             float diffConnectorY = Mathf.Abs(enterPositionInConnector.y - exitPositionInConnector.y);// check if the user has walked at least 2 meters in the direction of the connector
+            
             File.AppendAllText(Application.persistentDataPath + "/collision.txt", "" + DateTime.Now + " " + DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond + "\n");
-            File.AppendAllText(Application.persistentDataPath + "/collision.txt", "exit: " + collider.gameObject + "\ncollider global pos: " +  collider.transform.position+ "\n");
-            File.AppendAllText(Application.persistentDataPath + "/collision.txt", "global: " + exitPositionGlobal + "     local: " + exitPositionInConnector + "\n");
-            // check if the phone camera was walking parallel to the connector
-            // (the xz diff of enter and exit points are less than 1 meter) (connector local y is the axis that the user is walking through)
+            File.AppendAllText(Application.persistentDataPath + "/collision.txt", "exit: " + collider.gameObject + " collider global pos: " +  collider.transform.position+ "\n");
+            File.AppendAllText(Application.persistentDataPath + "/collision.txt", "entor pos global: " + exitPositionGlobal + "   enter pos in connector: " + exitPositionInConnector + "\n");
             File.AppendAllText(Application.persistentDataPath + "/collision.txt", "diffConnectorXZ: " + diffConnectorXZ+"\n");
             File.AppendAllText(Application.persistentDataPath + "/collision.txt", "diffConnectorY: " + diffConnectorY+"\n");
 
