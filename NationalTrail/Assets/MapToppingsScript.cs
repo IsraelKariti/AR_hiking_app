@@ -341,7 +341,8 @@ public class MapToppingsScript : MonoBehaviour
             File.AppendAllText(Application.persistentDataPath + "/walkedParallel.txt", "Values.GPS_ERROR_RADIUS_SQRD: " + Values.GPS_ERROR_RADIUS_SQRD + "\n");
 
             // check if the toppings will move horizontally to a place within the gps error radius
-            if ( designatedGlobalToppingsPositionXZ.sqrMagnitude < Values.GPS_ERROR_RADIUS_SQRD)
+            if ( designatedGlobalToppingsPositionXZ.sqrMagnitude < Values.GPS_ERROR_RADIUS_SQRD &&
+                designatedGlobalToppingsPositionXZ.sqrMagnitude > Values.MIN_THRESHOLD_SHIFT_SQRD)
             {
                 // this will cancel the initial dynamic valuation of height
                 transform.localPosition += designatedLocalShiftInMapXYZ;// the shift is 2 dimension XZ, so the y value of the vector is the z global axis
