@@ -22,7 +22,7 @@ public class PoiDetectionScript : MonoBehaviour
     private Vector3 colliderPositionGlobal;
 
     private GameObject currEnteredConnector;
-
+    
     // this entire game object is only enabled by the LS script, after the map has been stable in the last 3 gps samples
     private void Start()
     {
@@ -32,7 +32,7 @@ public class PoiDetectionScript : MonoBehaviour
     private void OnTriggerEnter(Collider collider)
     {
         // don't bother about entering a collider if you are already inside another collider
-        if (collider.gameObject.tag == "poiConnector" && currEnteredConnector == null) 
+        if (collider.gameObject.tag == "poiConnector" && currEnteredConnector == null ) 
         {
             // disable the LS script to avoid movement in the map
             leastSquareScript.EnableLS = false;
@@ -88,11 +88,8 @@ public class PoiDetectionScript : MonoBehaviour
                 File.AppendAllText(Application.persistentDataPath + "/collision.txt", "is parallel\n");
                 File.AppendAllText(Application.persistentDataPath + "/collision.txt", "colliderPositionGlobal" + colliderPositionGlobal + "\n");
                 File.AppendAllText(Application.persistentDataPath + "/collision.txt", "shiftGlobalXZ" + shiftGlobalXZ + "\n");
-                File.AppendAllText(Application.persistentDataPath + "/collision.txt", "shiftGlobalXYZ" + shiftGlobalXYZ + "\n");
                 File.AppendAllText(Application.persistentDataPath + "/collision.txt", "shiftGlobalXZ.sqrMagnitude: " + shiftGlobalXZ.sqrMagnitude + "\n");
-                File.AppendAllText(Application.persistentDataPath + "/collision.txt", "localShiftInMapXYZ" + localShiftInMapXYZ + "\n");
                 File.AppendAllText(Application.persistentDataPath + "/collision.txt", "localShiftInMapXZ" + localShiftInMapXZ + "\n");
-                File.AppendAllText(Application.persistentDataPath + "/collision.txt", "prevLocalShiftInMapXYZ" + prevLocalShiftInMapXYZ + "\n");
                 File.AppendAllText(Application.persistentDataPath + "/collision.txt", "prevLocalShiftInMapXZ" + prevLocalShiftInMapXZ + "\n");
                 File.AppendAllText(Application.persistentDataPath + "/collision.txt", "combinedLocalShiftInMap: " + combinedLocalShiftInMapXZ + "\n");
                 File.AppendAllText(Application.persistentDataPath + "/collision.txt", "combinedLocalShiftInMap.sqrMagnitude: " + combinedLocalShiftInMapXZ.sqrMagnitude + "\n");

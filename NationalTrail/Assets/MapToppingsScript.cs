@@ -337,7 +337,7 @@ public class MapToppingsScript : MonoBehaviour
             File.AppendAllText(Application.persistentDataPath + "/walkedParallel.txt", "localToppingsPos: "+ transform.localPosition+"\n");
             File.AppendAllText(Application.persistentDataPath + "/walkedParallel.txt", "shiftXYZ: " + designatedLocalShiftInMapXYZ + "\n");
             File.AppendAllText(Application.persistentDataPath + "/walkedParallel.txt", "designatedLocalToppingsPosition: " + designatedLocalToppingsPosition + "\n");
-            File.AppendAllText(Application.persistentDataPath + "/walkedParallel.txt", "designatedGlobalToppingsPositionXZ.sqrMagnitude: " + designatedLocalToppingsPositionXZ.sqrMagnitude + "\n");
+            File.AppendAllText(Application.persistentDataPath + "/walkedParallel.txt", "designatedLocalToppingsPositionXZ.sqrMagnitude: " + designatedLocalToppingsPositionXZ.sqrMagnitude + "\n");
             File.AppendAllText(Application.persistentDataPath + "/walkedParallel.txt", "Values.GPS_ERROR_RADIUS_SQRD: " + Values.GPS_ERROR_RADIUS_SQRD + "\n");
 
             // check if the toppings will move horizontally to a place within the gps error radius

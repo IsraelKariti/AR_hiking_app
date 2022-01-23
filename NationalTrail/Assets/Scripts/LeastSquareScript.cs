@@ -30,8 +30,10 @@ public class LeastSquareScript : MonoBehaviour
     //private bool _axOn;
     private Vector3 mapToppingsGlobalPositionBeforeLS;
     private Vector3 mapToppingsLocalPositionBeforeLS;
+    private Quaternion mapToppingsGlobalRotationBeforeLS;
     private Vector3 mapToppingsGlobalPositionAfterLS;
     private Vector3 mapToppingsLocalPositionAfterLS;
+
     private int countGpsSamplesConstantRotation = 0;
     private int countGpsSamplesConstantPositionX = 0;
     private int countGpsSamplesConstantPositionZ = 0;
@@ -76,8 +78,10 @@ public class LeastSquareScript : MonoBehaviour
             {
                 mapToppingsGlobalPositionBeforeLS = mapToppings.transform.position;
                 mapToppingsLocalPositionBeforeLS = mapToppings.transform.localPosition;
+                mapToppingsGlobalRotationBeforeLS = mapToppings.transform.rotation;
                 File.AppendAllText(Application.persistentDataPath + "/gpsForShift.txt", "mapToppings global Position: " + mapToppingsGlobalPositionBeforeLS + "\n");
                 File.AppendAllText(Application.persistentDataPath + "/gpsForShift.txt", "mapToppings local Position: " + mapToppingsLocalPositionBeforeLS + "\n");
+                File.AppendAllText(Application.persistentDataPath + "/gpsForShift.txt", "mapToppings local Rotation: " + mapToppings.transform.localRotation + "\n");
             }
 
 
@@ -107,6 +111,34 @@ public class LeastSquareScript : MonoBehaviour
                 mapToppingsLocalPositionAfterLS = mapToppings.transform.localPosition;
                 File.AppendAllText(Application.persistentDataPath + "/gpsForShift.txt", "mapToppings global Position: " + mapToppingsGlobalPositionAfterLS + "\n");
                 File.AppendAllText(Application.persistentDataPath + "/gpsForShift.txt", "mapToppings local Position: " + mapToppingsLocalPositionAfterLS + "\n");
+                File.AppendAllText(Application.persistentDataPath + "/gpsForShift.txt", "mapToppings local Rotation: " + mapToppings.transform.localRotation + "\n");
+                if (isMapToppingsHorizontallyLocked)
+                {
+                    File.AppendAllText(Application.persistentDataPath + "/gpsForShift.txt", "isMapToppingsHorizontallyLocked: " + isMapToppingsHorizontallyLocked + "\n");
+
+                    // if the toppings position BEFORE the move are still in the gps error radius
+                    if (Vector3.Distance(map.transform.position, mapToppingsGlobalPositionBeforeLS) < Values.GPS_ERROR_RADIUS)
+                    {
+                        File.AppendAllText(Application.persistentDataPath + "/gpsForShift.txt", "still in bounds: " + "\n");
+
+                        // restore the map toppings to be at the previous position and rotation 
+                        mapToppings.transform.position = mapToppingsGlobalPositionBeforeLS;
+                        mapToppings.transform.rotation = mapToppingsGlobalRotationBeforeLS;
+                    }
+                    else// if the map has moved too far from the toppings physical\global position than reset the toppings to the center of the map
+                    {
+                        File.AppendAllText(Application.persistentDataPath + "/gpsForShift.txt", "out of bounds: " + "\n");
+                        mapToppings.transform.localPosition = Vector3.zero;
+                        mapToppings.GetComponent<MapToppingsScript>().IsHorizontalLocked = false;
+                    }
+                    File.AppendAllText(Application.persistentDataPath + "/gpsForShift.txt", "After FIX: " + "\n");
+                    File.AppendAllText(Application.persistentDataPath + "/gpsForShift.txt", "map Pos: " + map.transform.position + "\n");
+                    File.AppendAllText(Application.persistentDataPath + "/gpsForShift.txt", "map rot: " + map.transform.rotation + "\n");
+                    File.AppendAllText(Application.persistentDataPath + "/gpsForShift.txt", "mapToppings global Position: " + mapToppings.transform.position + "\n");
+                    File.AppendAllText(Application.persistentDataPath + "/gpsForShift.txt", "mapToppings local Position: " + mapToppings.transform.localPosition + "\n");
+                    File.AppendAllText(Application.persistentDataPath + "/gpsForShift.txt", "mapToppings local Rotation: " + mapToppings.transform.localRotation + "\n");
+
+                }
             }
             // after the map is repositioned check if the toppings are in in horizontal lock
             //if (isMapToppingsHorizontallyLocked)
@@ -120,13 +152,11 @@ public class LeastSquareScript : MonoBehaviour
 
             //        // restore the map toppings to be at the previous position and rotation 
             //        mapToppings.transform.position = mapToppingsPrevGlobalPosition;
-            //        mapToppings.transform.rotation = mapToppingsPrevGlobalRotation;
             //    }
             //    else// if the map has moved too far from the toppings physical\global position than reset the toppings to the center of the map
             //    {
             //        File.AppendAllText(Application.persistentDataPath + "/gpsForShift.txt", "out of bounds: " + "\n");
             //        mapToppings.transform.localPosition = Vector3.zero;
-            //        mapToppings.transform.localRotation = Quaternion.identity;
             //        mapToppings.GetComponent<MapToppingsScript>().IsHorizontalLocked = false;
             //    }
             //}
