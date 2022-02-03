@@ -14,6 +14,7 @@ public class MapToppingsScript : MonoBehaviour
     public GameObject poiConnectorPrefab;
     public GameObject waterBuryPrefab;
     public GameObject sightPrefab;
+    public GameObject climberPrefab;
     public Text horizontalIndicationText;
     public Text verticalIndicationText;
     public double MapCenterLat { get { return mapcenterLat; } set { mapcenterLat = value; } }
@@ -30,6 +31,7 @@ public class MapToppingsScript : MonoBehaviour
     private List<GameObject> poiConnectors;
     private List<GameObject> waterBuries;
     private List<GameObject> sights;
+    private List<GameObject> climbers;
 
     private bool isVerticalLocked = false;
     private bool isHorizontalLocked = false;
@@ -51,6 +53,7 @@ public class MapToppingsScript : MonoBehaviour
         waterBuries = new List<GameObject>();
         sights = new List<GameObject>();
         poiFileLines = new List<string>();
+        climbers = new List<GameObject>();
     }
 
     // Start is called before the first frame update
@@ -96,6 +99,35 @@ public class MapToppingsScript : MonoBehaviour
 
         // connect all pois to a route\path
         createPoiConnectors();// this can't be called on Awake because the connectors depend on the result calculation of the position of every poi on its Start function
+
+        //create the climber for ARVR israel
+        createClimbers();
+    }
+
+    private void createClimbers()
+    {
+
+        StreamReader reader = new StreamReader(Application.persistentDataPath + "/climbers.txt");
+        string line;
+        while ((line = reader.ReadLine()) != null)
+        {
+            GameObject go = Instantiate(climberPrefab, Vector3.zero, Quaternion.identity, transform);
+
+            // get all elments in line
+            string[] elements = line.Split(' ');
+
+            // set the altitude of the poi
+            ClimberScript climberScript = go.GetComponent<ClimberScript>();
+            climberScript.Lat = double.Parse(elements[0]);
+            climberScript.Lon = double.Parse(elements[1]);
+            climberScript.AltL = float.Parse(elements[2]);
+            climberScript.AltH = float.Parse(elements[3]);
+
+            // add to list of sights/signs
+            climbers.Add(go);
+
+        }
+        reader.Close();
 
     }
 
